@@ -121,8 +121,9 @@ function Get-HIDSelfServiceProduct {
     try {
         Write-Verbose "Invoking command '$($MyInvocation.MyCommand)'"
         $splatParams = @{
-            Method = 'GET'
-            Uri    = 'selfservice/products'
+            Method   = 'GET'
+            Uri      = 'selfservice/products'
+            PageSize = 50
         }
         Invoke-HIDRestMethod @splatParams
     } catch {
@@ -518,14 +519,17 @@ function Invoke-HIDRestMethod {
         [string]
         $Uri,
 
+        [Parameter()]
         [object]
         $Body,
 
+        [Parameter()]
         [string]
         $ContentType = 'application/json',
 
-        [switch]
-        $UsePagination
+        [Parameter()]
+        [int]
+        $PageSize
     )
 
     try {
@@ -547,8 +551,23 @@ function Invoke-HIDRestMethod {
             $splatParams['Body'] = $Body
         }
 
-        if ($UsePagination){
-            $resultList = [System.Collections.Generic.List[object]]::new()
+        if ($PageSize){
+            $objectList = [System.Collections.Generic.List[object]]::new()
+            $take = $PageSize
+            $skip = 0
+
+            $splatParams['Uri'] = "$portalBaseUrl/api/v1/$Uri" + "?skip=$skip&take=$take"
+            $splatParams['Method'] = 'GET'
+            $responseObject = Invoke-RestMethod @splatParams
+            $objectList.Add($responseObject)
+            $skip += $take
+            while($responseObject.Count -eq $take){
+                $splatParams['Uri'] = "$portalBaseUrl/api/v1/$Uri" + "?skip=$skip&take=$take"
+                $responseObject = Invoke-RestMethod @splatParams
+                $skip += $take
+                $objectList.AddRange($responseObject)
+            }
+            $results = $objectList
         } else {
             $results = Invoke-RestMethod @splatParams
         }
