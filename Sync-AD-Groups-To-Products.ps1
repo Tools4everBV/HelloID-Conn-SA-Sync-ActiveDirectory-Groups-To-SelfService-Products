@@ -615,19 +615,6 @@ catch {
     throw "Error querying AD groups that match filter [$($adQuerySplatParams.Filter)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
 
-# Validate and enhance groups
-try {
-
-}
-catch {
-    $ex = $PSItem
-    $errorMessage = Get-ErrorMessage -ErrorObject $ex
-
-    Hid-Write-Status -Event Error -Message "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
-
-    throw "Error querying AD groups that match filter [$($adQuerySplatParams.Filter)]. Error Message: $($errorMessage.AuditErrorMessage)"
-}
-
 Hid-Write-Status -Event Information -Message "------[HelloID]------"
 try {
     # if ($verboseLogging -eq $true) {
