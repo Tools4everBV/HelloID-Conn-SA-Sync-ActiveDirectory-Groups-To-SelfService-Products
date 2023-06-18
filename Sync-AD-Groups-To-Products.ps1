@@ -659,12 +659,6 @@ try {
     if (($helloIDSelfserviceCategoriesInScope | Measure-Object).Count -eq 0) {
         throw "No HelloID Self service Categories have been found with the name [$ProductCategory]"
     }
-    elseif (($adGroupsInScope.SID | Measure-Object).Count -ge 1) {
-        $adGroupsInScope | ForEach-Object {
-            # Get value of SID
-            $_.SID = $_.SID.Value
-        }
-    }
 
     Hid-Write-Status -Event Success -Message "Successfully queried Self service product categories from HelloID (after filtering for specified category). Result count: $(($helloIDSelfserviceCategoriesInScope | Measure-Object).Count)"
 }
