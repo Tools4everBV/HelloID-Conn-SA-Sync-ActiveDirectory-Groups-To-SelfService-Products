@@ -1,11 +1,11 @@
 #####################################################
-# HelloID-SA-Sync-AD-Groups-To-Products
+# HelloID-SA-Sync-AD-Application-Groups-To-Products
 #
 # Version: 1.0.0
 #####################################################
-$VerbosePreference = "SilentlyContinue"
-$informationPreference = "Continue"
-$WarningPreference = "Continue"
+$VerbosePreference = 'SilentlyContinue'
+$informationPreference = 'Continue'
+$WarningPreference = 'Continue'
 
 # Set TLS to accept TLS, TLS 1.1 and TLS 1.2
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls12
@@ -21,31 +21,31 @@ $script:PortalBaseUrl = $portalBaseUrl
 $portalApiKey = $portalApiKey
 $portalApiSecret = $portalApiSecret
 
-#AD Connection Configuration
-$ADGroupsFilter = "name -like `"App-*`" -or name -like `"*-App`"" # Optional, when no filter is provided ($ADGroupsFilter = "*"), all groups will be queried
-$ADGroupsOUs = @("OU=Applications,OU=Groups,OU=Resources,DC=enyoi,DC=org") # Optional, when no OUs are provided ($ADGroupsOUs = @()), all ous will be queried
+#Target Connection Configuration   # Needed for accessing the Target System (These variables are also required for the Actions of each product)
+$ADGroupsFilter = "name -like `"FL-A-ODM-*`" -or name -like `"FL-A-AVD-*`" -or name -like `"FL-A-RDP-*`"" # Optional, when no filter is provided ($Filter = $null), all mailboxes will be queried
+$ADGroupsOUs = @("OU=IAM,OU=Groups,DC=Florence,DC=local")
 
-#HelloID Self service Product Configuration
-$ProductAccessGroup = "schoutenenzn.nl\Users"  # If not found, the product is created without Access Group
-$ProductCategory = "Applicatiegroepen" # Must be an existing category
-$useADManagedByGroupAsResourceOwner = $true # If True the resource owner group will be defined per product based on ManagedBy of AD group
-$SAProductResourceOwner = "" # If left empty the groupname will be: "Resource owners [target-systeem] - [Product_Naam]") - Only used when $useADManagedByGroupAsResourceOwner is false
-$SAProductWorkflow = "Approval by resource owner" # If empty. The Default HelloID Workflow is used. If specified Workflow does not exist the Product creation will raise an error.
-$FaIcon = "windows"
-$productVisibility = "All"
-$productRequestCommentOption = "Hidden" # Define if comments can be added when requesting the product. Supported options: Optional, Hidden, Required
+#HelloID Product Configuration
+$ProductAccessGroup = "Florence.local\Users"  # If not found, the product is created without extra Access Group
+$ProductCategory = 'Applicatiegroepen' # If the category is not found, it will be created
+$calculateProductResourceOwnerInAD = $true # If True the resource owner group will be defined per product based on ManagedBy of AD group - has to be additionaly configured, starting at line 1189!
+$SAProductResourceOwner = '' # If left empty the groupname will be: "Resource owners [target-systeem] - [Product_Naam]") - Only used when is false
+$SAProductWorkflow = 'Approval by resource owner' # If empty. The Default HelloID Workflow is used. If specified Workflow does not exist the Product creation will raise an error.
+$FaIcon = 'windows'
+$productVisibility = 'All'
+$productRequestCommentOption = 'Required' # Define if comments can be added when requesting the product. Supported options: Optional, Hidden, Required
 $returnProductOnUserDisable = $false # If True the product will be returned when the user owning the product gets disabled
 $createDefaultEmailActions = $true # If True the default email actions will be enabled
 $multipleRequestOption = 1 # How many times a product can be requested. 1: Once. 2: Multiple times.
 
 $removeProduct = $true # If False product will be disabled
-$overwriteExistingProduct = $false # If True existing product will be overwritten with the input from this script (e.g. the, description, approval worklow or icon). Only use this when you actually changed the product input
+$overwriteExistingProduct = $true # If True existing product will be overwritten with the input from this script (e.g. the approval worklow or icon). Only use this when you actually changed the product input
 $overwriteExistingProductAction = $false  # If True existing product actions will be overwritten with the input from this script. Only use this when you actually changed the script or variables for the action(s)
 $addMissingProductAction = $false # If True missing product actions (according to the the input from this script) will be added
 
 #Target System Configuration
 # Dynamic property invocation
-$ProductSkuPrefix = "ADGRP" # The prefix will be used as the first part HelloID Self service Product SKU.
+$ProductSkuPrefix = "APPGRP" # The prefix will be used as the first part HelloID Self service Product SKU.
 $adGroupUniqueProperty = "objectGUID" # The vaule of the property will be used as HelloID Self service Product SKU
 
 #region functions
@@ -223,15 +223,15 @@ function Resolve-HTTPError {
       MyCommand       = $ErrorObject.InvocationInfo.MyCommand
       RequestUri      = $ErrorObject.TargetObject.RequestUri
       ScriptStackTrace   = $ErrorObject.ScriptStackTrace
-      ErrorMessage     = ""
+      ErrorMessage     = ''
     }
 
-    if ($ErrorObject.Exception.GetType().FullName -eq "Microsoft.PowerShell.Commands.HttpResponseException") {
+    if ($ErrorObject.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') {
       # $httpErrorObj.ErrorMessage = $ErrorObject.ErrorDetails.Message # Does not show the correct error message for the Raet IAM API calls
       $httpErrorObj.ErrorMessage = $ErrorObject.Exception.Message
 
     }
-    elseif ($ErrorObject.Exception.GetType().FullName -eq "System.Net.WebException") {
+    elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
       $httpErrorObj.ErrorMessage = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
     }
 
@@ -253,7 +253,7 @@ function Get-ErrorMessage {
       AuditErrorMessage  = $null
     }
 
-    if ( $($ErrorObject.Exception.GetType().FullName -eq "Microsoft.PowerShell.Commands.HttpResponseException") -or $($ErrorObject.Exception.GetType().FullName -eq "System.Net.WebException")) {
+    if ( $($ErrorObject.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or $($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException')) {
       $httpErrorObject = Resolve-HTTPError -Error $ErrorObject
 
       $errorMessage.VerboseErrorMessage = $httpErrorObject.ErrorMessage
@@ -279,7 +279,7 @@ try {
   # More information about the cmdlet and the supported parameters: https://learn.microsoft.com/en-us/powershell/module/activedirectory/get-aduser?view=windowsserver2022-ps
   $queryADUserSplatParams = @{
     Filter   = "UserPrincipalName -eq `"$user`""
-    ErrorAction = "Stop" # Makes sure the action enters the catch when an error occurs
+    ErrorAction = 'Stop' # Makes sure the action enters the catch when an error occurs
   }
 
   Write-Verbose "Querying AD user that matches filter [$($queryADUserSplatParams.Filter)]"
@@ -297,7 +297,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error querying AD user that matches filter [$($queryADUserSplatParams.Filter)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -307,7 +307,7 @@ try {
   # More information about the cmdlet and the supported parameters: https://learn.microsoft.com/en-us/powershell/module/activedirectory/get-adgroup?view=windowsserver2022-ps
   $queryADGroupSplatParams = @{
     Filter   = "SamAccountName -eq `"$group`""
-    ErrorAction = "Stop" # Makes sure the action enters the catch when an error occurs
+    ErrorAction = 'Stop' # Makes sure the action enters the catch when an error occurs
   }
 
   Write-Verbose "Querying AD group that matches filter [$($queryADGroupSplatParams.Filter)]"
@@ -325,7 +325,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error querying AD group that matches filter [$($queryADGroupSplatParams.Filter)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -338,7 +338,7 @@ try {
     Members   = $adUser # The object to add as member of the AD group. Can be a user, group and computer object
     PassThru  = $true # Returns an object representing the item with which you are working
     Confirm   = $false # Avoids the prompt for confirmation (as this cannot be confirmed when running an automated task)
-    ErrorAction = "Stop" # Makes sure the action enters the catch when an error occurs
+    ErrorAction = 'Stop' # Makes sure the action enters the catch when an error occurs
   }
 
   Write-Verbose "Adding AD user [$($addADGroupMemberSplatParams.Members)] to AD group [$($addADGroupMemberSplatParams.Identity)]"
@@ -352,7 +352,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error adding AD user [$($addADGroupMemberSplatParams.Members)] to AD group [$($addADGroupMemberSplatParams.Identity)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -375,15 +375,15 @@ function Resolve-HTTPError {
       MyCommand       = $ErrorObject.InvocationInfo.MyCommand
       RequestUri      = $ErrorObject.TargetObject.RequestUri
       ScriptStackTrace   = $ErrorObject.ScriptStackTrace
-      ErrorMessage     = ""
+      ErrorMessage     = ''
     }
 
-    if ($ErrorObject.Exception.GetType().FullName -eq "Microsoft.PowerShell.Commands.HttpResponseException") {
+    if ($ErrorObject.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') {
       # $httpErrorObj.ErrorMessage = $ErrorObject.ErrorDetails.Message # Does not show the correct error message for the Raet IAM API calls
       $httpErrorObj.ErrorMessage = $ErrorObject.Exception.Message
 
     }
-    elseif ($ErrorObject.Exception.GetType().FullName -eq "System.Net.WebException") {
+    elseif ($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException') {
       $httpErrorObj.ErrorMessage = [System.IO.StreamReader]::new($ErrorObject.Exception.Response.GetResponseStream()).ReadToEnd()
     }
 
@@ -405,7 +405,7 @@ function Get-ErrorMessage {
       AuditErrorMessage  = $null
     }
 
-    if ( $($ErrorObject.Exception.GetType().FullName -eq "Microsoft.PowerShell.Commands.HttpResponseException") -or $($ErrorObject.Exception.GetType().FullName -eq "System.Net.WebException")) {
+    if ( $($ErrorObject.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException') -or $($ErrorObject.Exception.GetType().FullName -eq 'System.Net.WebException')) {
       $httpErrorObject = Resolve-HTTPError -Error $ErrorObject
 
       $errorMessage.VerboseErrorMessage = $httpErrorObject.ErrorMessage
@@ -431,7 +431,7 @@ try {
   # More information about the cmdlet and the supported parameters: https://learn.microsoft.com/en-us/powershell/module/activedirectory/get-aduser?view=windowsserver2022-ps
   $queryADUserSplatParams = @{
     Filter   = "UserPrincipalName -eq `"$user`""
-    ErrorAction = "Stop" # Makes sure the action enters the catch when an error occurs
+    ErrorAction = 'Stop' # Makes sure the action enters the catch when an error occurs
   }
 
   Write-Verbose "Querying AD user that matches filter [$($queryADUserSplatParams.Filter)]"
@@ -449,7 +449,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error querying AD user that matches filter [$($queryADUserSplatParams.Filter)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -459,7 +459,7 @@ try {
   # More information about the cmdlet and the supported parameters: https://learn.microsoft.com/en-us/powershell/module/activedirectory/get-adgroup?view=windowsserver2022-ps
   $queryADGroupSplatParams = @{
     Filter   = "SamAccountName -eq `"$group`""
-    ErrorAction = "Stop" # Makes sure the action enters the catch when an error occurs
+    ErrorAction = 'Stop' # Makes sure the action enters the catch when an error occurs
   }
 
   Write-Verbose "Querying AD group that matches filter [$($queryADGroupSplatParams.Filter)]"
@@ -477,7 +477,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error querying AD group that matches filter [$($queryADGroupSplatParams.Filter)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -490,7 +490,7 @@ try {
     Members   = $adUser # The object to remove as member of the AD group. Can be a user, group and computer object
     PassThru  = $true # Returns an object representing the item with which you are working
     Confirm   = $false # Avoids the prompt for confirmation (as this cannot be confirmed when running an automated task)
-    ErrorAction = "Stop" # Makes sure the action enters the catch when an error occurs
+    ErrorAction = 'Stop' # Makes sure the action enters the catch when an error occurs
   }
 
   Write-Verbose "Removing AD user [$($removeADGroupMemberSplatParams.Members)] from AD group [$($removeADGroupMemberSplatParams.Identity)]"
@@ -504,7 +504,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error removing AD user [$($removeADGroupMemberSplatParams.Members)] from AD group [$($removeADGroupMemberSplatParams.Identity)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -514,16 +514,17 @@ catch {
 
 #region script
 Hid-Write-Status -Event Information -Message "Starting synchronization of Active Directory to HelloID Self service Producs"
-Hid-Write-Status -Event Information -Message "------[[Active Directory]]-----------"
+Hid-Write-Status -Event Information -Message "------[Active Directory]-----------"
+    
 try {
-    $moduleName = "ActiveDirectory"
+    $moduleName = 'ActiveDirectory'
     $importModule = Import-Module -Name $moduleName -ErrorAction Stop
 }
 catch {
     $ex = $PSItem
     $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-    Hid-Write-Status -Event Error -Message "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+    Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
     throw "Error importing module [$moduleName]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -539,28 +540,20 @@ try {
         , "distinguishedName"
         , "managedBy"
     )
-  
+
     $adQuerySplatParams = @{
         Filter     = $ADGroupsFilter
         Properties = $properties
     }
-    
+
     if ([String]::IsNullOrEmpty($ADGroupsOUs)) {
-        if ($verboseLogging -eq $true) {
-            Hid-Write-Status -Event Information -Message "Querying AD groups that match filter [$($adQuerySplatParams.Filter)]"
-        }
+        Hid-Write-Status -Event Information -Message "Querying AD groups that match filter [$($adQuerySplatParams.Filter)]"
         $adGroups = Get-ADGroup @adQuerySplatParams | Select-Object $properties
-     
-        if ($verboseLogging -eq $true) {
-            Hid-Write-Status -Event Success -Message "Successfully queried AD groups that match filter [$($adQuerySplatParams.Filter)]. Result count: $(($adGroups | Measure-Object).Count)"
-        }
     }
     else {
         $adGroups = [System.Collections.ArrayList]@()
         foreach ($ADGroupsOU in $ADGroupsOUs) {
-            if ($verboseLogging -eq $true) {
-                Hid-Write-Status -Event Information -Message "Querying AD groups that match filter [$($adQuerySplatParams.Filter)] in OU [$($ADGroupsOU)]"
-            }
+            Hid-Write-Status -Event Information -Message "Querying AD groups that match filter [$($adQuerySplatParams.Filter)] in OU [$($ADGroupsOU)]"
             $adGroupsInOU = Get-ADGroup @adQuerySplatParams -SearchBase $ADGroupsOU | Select-Object $properties
             if ($adGroupsInOU -is [array]) {
                 [void]$adGroups.AddRange($adGroupsInOU)
@@ -568,16 +561,9 @@ try {
             else {
                 [void]$adGroups.Add($adGroupsInOU)
             }
-                
             if ($verboseLogging -eq $true) {
-                Hid-Write-Status -Event Success -Message "Successfully queried AD groups that match filter [$($adQuerySplatParams.Filter)] in OU [$($ADGroupsOU)]. Result count: $(($adGroupsInOU | Measure-Object).Count)"
+                Hid-Write-Status -Event Information -Message "Successfully queried AD groups that match filter [$($adQuerySplatParams.Filter)] in OU [$($ADGroupsOU)]. Result count: $(($adGroupsInOU | Measure-Object).Count)"
             }
-        }
-    }
-
-    if (($adGroups | Measure-Object).Count -gt 0) {
-        if ($null -eq $adGroups.$uniqueProperty) {
-            throw "The specified unique property [$uniqueProperty] for Active Directory does not exist as property in the groups"
         }
     }
 
@@ -586,7 +572,7 @@ try {
         # Custom - Only process groups with a description
         if ([string]::IsNullOrEmpty($adGroup.description)) {
             if ($verboseLogging -eq $true) {
-                Hid-Write-Status -Event Warning "No description set in AD for AD group [$($adGroup)]"
+                Hid-Write-Status -Event Warning "No description set in AD for AD group [$($adGroups)]"
             }
         }
         else {
@@ -612,7 +598,7 @@ catch {
 
     Hid-Write-Status -Event Error -Message "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
-    throw "Error querying AD groups that match filter [$($adQuerySplatParams.Filter)]. Error Message: $($errorMessage.AuditErrorMessage)"
+    throw "Error querying AD groups that match filter [$($adGroupssSearchFilter)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
 
 Hid-Write-Status -Event Information -Message "------[HelloID]------"
@@ -774,8 +760,7 @@ try {
     $productObjects = [System.Collections.ArrayList]@()
     foreach ($adGroupInScope in $adGroupsInScope) {
         # Define ManagedBy Group
-        $ManagedByGroupName = $null
-        if ( $useADManagedByGroupAsResourceOwner -eq $true ) {
+        if ( $calculateProductResourceOwnerInAD -eq $true ) {
             if (-not[string]::IsNullOrEmpty($($adGroupInScope.managedBy))) {
                 [regex]$adGroupNameRegex = "(?<=CN=)(.*)(?=,OU=)"
                 $ManagedByGroupName = $adGroupNameRegex.Matches("$($adGroupInScope.managedBy)") | foreach-object { $_.Value }
@@ -803,7 +788,7 @@ try {
             powerShellScript    = $addADUserToADGroupScript
             variables           = @(
                 @{
-                    "name"           = "Group"
+                    "name"           = "GroupId"
                     "value"          = "$($adGroupInScope.samAccountName)"
                     "typeConstraint" = "string"
                     "secure"         = $false
@@ -828,7 +813,7 @@ try {
             powerShellScript    = $removeADUserFromADGroupScript
             variables           = @(
                 @{
-                    "name"           = "Group"
+                    "name"           = "GroupId"
                     "value"          = "$($adGroupInScope.samAccountName)"
                     "typeConstraint" = "string"
                     "secure"         = $false
@@ -859,7 +844,7 @@ try {
             LimitType                  = "Fixed"
             ManagerCanOverrideDuration = $true
             ReminderTimeout            = 30
-            OwnershipMaxDuration       = 90
+            OwnershipMaxDuration       = 3650
             CreateDefaultEmailActions  = $createDefaultEmailActions 
             Visibility                 = $productVisibility
             RequestCommentOption       = $productRequestCommentOption
