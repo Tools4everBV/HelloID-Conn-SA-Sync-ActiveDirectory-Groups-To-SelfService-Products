@@ -17,9 +17,9 @@ $verboseLogging = $false
 
 # Make sure to create the Global variables defined below in HelloID
 #HelloID Connection Configuration
-$script:PortalBaseUrl = $portalBaseUrl
-$portalApiKey = $portalApiKey
-$portalApiSecret = $portalApiSecret
+# $script:PortalBaseUrl = "" # Set from Global Variable
+# $portalApiKey ="" # Set from Global Variable
+# $portalApiSecret = "" # Set from Global Variable
 
 #Target Connection Configuration   # Needed for accessing the Target System (These variables are also required for the Actions of each product)
 $ADGroupsFilter = "name -like `"FL-A-ODM-*`" -or name -like `"FL-A-AVD-*`" -or name -like `"FL-A-RDP-*`"" # Optional, when no filter is provided ($Filter = $null), all mailboxes will be queried
