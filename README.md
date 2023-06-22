@@ -1,4 +1,10 @@
 # HelloID-Conn-SA-Sync-ActiveDirectory-Groups-To-SelfService-Products
+Synchronizes AD groups to HelloID Self service products
+
+<a href="https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-ActiveDirectory-Groups-To-SelfService-Products/network/members"><img src="https://img.shields.io/github/forks/Tools4everBV/HelloID-Conn-SA-Sync-ActiveDirectory-Groups-To-SelfService-Products" alt="Forks Badge"/></a>
+<a href="https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-ActiveDirectory-Groups-To-SelfService-Products/pulls"><img src="https://img.shields.io/github/issues-pr/Tools4everBV/HelloID-Conn-SA-Sync-ActiveDirectory-Groups-To-SelfService-Products" alt="Pull Requests Badge"/></a>
+<a href="https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-ActiveDirectory-Groups-To-SelfService-Products/issues"><img src="https://img.shields.io/github/issues/Tools4everBV/HelloID-Conn-SA-Sync-ActiveDirectory-Groups-To-SelfService-Products" alt="Issues Badge"/></a>
+<a href="https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-ActiveDirectory-Groups-To-SelfService-Products/graphs/contributors"><img alt="GitHub contributors" src="https://img.shields.io/github/contributors/Tools4everBV/HelloID-Conn-SA-Sync-ActiveDirectory-Groups-To-SelfService-Products?color=2b9348"></a>
 
 | :information_source: Information |
 |:---------------------------|
@@ -7,14 +13,19 @@
 ## Table of Contents
 - [HelloID-Conn-SA-Sync-ActiveDirectory-Groups-To-SelfService-Products](#helloid-conn-sa-sync-activedirectory-groups-to-selfservice-products)
   - [Table of Contents](#table-of-contents)
+  - [Requirements](#requirements)
   - [Introduction](#introduction)
   - [Getting started](#getting-started)
-    - [Prerequisites](#prerequisites)
       - [Create an API key and secret](#create-an-api-key-and-secret)
     - [Synchronization settings](#synchronization-settings)
   - [Remarks](#remarks)
   - [Getting help](#getting-help)
   - [HelloID Docs](#helloid-docs)
+
+## Requirements
+- Make sure you have Windows PowerShell 5.1 installed on the server where the HelloID agent and Service Automation agent are running.
+- Make sure you have installed the PowerShell [ActiveDirectory](https://learn.microsoft.com/en-us/powershell/module/activedirectory/?view=windowsserver2022-ps) module.
+- Make sure the sychronization is configured to meet your requirements.
 
 ## Introduction
 
@@ -27,15 +38,6 @@ And vice versa for the removing of the products. The products will be removed (o
 This is intended for scenarios where there are (lots of) groups that we want to be requestable as a product. This group sync is desinged to work in combination with the [ActiveDirectory Groupmembersips to Productassignments Sync](https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-ActiveDirectory-Groupmemberships-To-SelfService-Productassignments).
 
 ## Getting started
-
-### Prerequisites
-
-- [ ] Make sure you have Windows PowerShell 5.1 installed on the server where the HelloID agent and Service Automation agent are running.
-
-- [ ] Make sure you have installed the PowerShell [ActiveDirectory](https://learn.microsoft.com/en-us/powershell/module/activedirectory/?view=windowsserver2022-ps) module.
-
-- [ ] Make sure the sychronization is configured to meet your requirements.
-
 
 #### Create an API key and secret
 
