@@ -22,11 +22,11 @@ $verboseLogging = $false
 # $portalApiSecret = "" # Set from Global Variable
 
 #Target Connection Configuration   # Needed for accessing the Target System (These variables are also required for the Actions of each product)
-$ADGroupsFilter = "name -like `"FL-A-ODM-*`" -or name -like `"FL-A-AVD-*`" -or name -like `"FL-A-RDP-*`"" # Optional, when no filter is provided ($Filter = $null), all mailboxes will be queried
+$ADGroupsFilter = "name -like `"App-*`" -or name -like `"*-App`"" # Optional, when no filter is provided ($Filter = $null), all mailboxes will be queried
 $ADGroupsOUs = @("OU=IAM,OU=Groups,DC=Florence,DC=local")
 
 #HelloID Product Configuration
-$ProductAccessGroup = "Florence.local\Users"  # If not found, the product is created without extra Access Group
+$ProductAccessGroup = "enyoi.org\Users"  # If not found, the product is created without extra Access Group
 $ProductCategory = 'Applicatiegroepen' # If the category is not found, it will be created
 $calculateProductResourceOwnerInAD = $true # If True the resource owner group will be defined per product based on ManagedBy of AD group - has to be additionaly configured, starting at line 1189!
 $SAProductResourceOwner = '' # If left empty the groupname will be: "Resource owners [target-systeem] - [Product_Naam]") - Only used when is false
