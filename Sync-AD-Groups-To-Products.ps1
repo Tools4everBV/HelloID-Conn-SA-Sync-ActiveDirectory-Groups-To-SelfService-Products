@@ -555,7 +555,7 @@ try {
         $adGroups = [System.Collections.ArrayList]@()
         foreach ($ADGroupsOU in $ADGroupsOUs) {
             Hid-Write-Status -Event Information -Message "Querying AD groups that match filter [$($adQuerySplatParams.Filter)] in OU [$($ADGroupsOU)]"
-            $adGroupsInOU = Get-ADGroup @adQuerySplatParams -SearchBase $ADGroupsOU | Select-Object $properties
+            $adGroupsInOU = Get-ADGroup @adQuerySplatParams -SearchBase $ADGroupsOU -SearchScope OneLevel | Select-Object $properties
             if ($adGroupsInOU -is [array]) {
                 [void]$adGroups.AddRange($adGroupsInOU)
             }
