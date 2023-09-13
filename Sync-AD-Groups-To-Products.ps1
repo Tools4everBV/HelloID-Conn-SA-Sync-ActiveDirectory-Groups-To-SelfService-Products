@@ -18,7 +18,7 @@ $verboseLogging = $false
 # Make sure to create the Global variables defined below in HelloID
 #HelloID Connection Configuration
 # $script:PortalBaseUrl = "" # Set from Global Variable
-# $portalApiKey ="" # Set from Global Variable
+# $portalApiKey = "" # Set from Global Variable
 # $portalApiSecret = "" # Set from Global Variable
 
 #Target Connection Configuration   # Needed for accessing the Target System (These variables are also required for the Actions of each product)
