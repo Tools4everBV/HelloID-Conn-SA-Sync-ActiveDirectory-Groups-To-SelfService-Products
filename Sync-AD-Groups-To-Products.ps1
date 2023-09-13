@@ -768,7 +768,7 @@ try {
             }
         }
         else {
-            $ManagedByGroupName = if ([string]::IsNullOrWhiteSpace($SAProductResourceOwner) ) { "$($adGroupInScope.name) Resource Owners" } else { $SAProductResourceOwner }
+            $ManagedByGroupName = if ([string]::IsNullOrWhiteSpace($SAProductResourceOwner) ) { "local\$($adGroupInScope.name) Resource Owners" } else { $SAProductResourceOwner }
         }
 
         # Define actions for product
