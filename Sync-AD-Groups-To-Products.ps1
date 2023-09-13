@@ -792,7 +792,7 @@ try {
             powerShellScript    = $addADUserToADGroupScript
             variables           = @(
                 @{
-                    "name"           = "GroupId"
+                    "name"           = "Group"
                     "value"          = "$($adGroupInScope.samAccountName)"
                     "typeConstraint" = "string"
                     "secure"         = $false
@@ -817,7 +817,7 @@ try {
             powerShellScript    = $removeADUserFromADGroupScript
             variables           = @(
                 @{
-                    "name"           = "GroupId"
+                    "name"           = "Group"
                     "value"          = "$($adGroupInScope.samAccountName)"
                     "typeConstraint" = "string"
                     "secure"         = $false
