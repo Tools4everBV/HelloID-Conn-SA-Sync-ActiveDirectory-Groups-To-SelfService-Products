@@ -991,7 +991,9 @@ try {
                     }
                 }
                 else {
-                    Hid-Write-Status -Event Warning "DryRun: Would create HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
+                    if ($verboseLogging -eq $true) {
+                        Hid-Write-Status -Event Warning "DryRun: Would create HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
+                    }
                 }
             }
             catch {
