@@ -59,7 +59,8 @@ This is intended for scenarios where there are (lots of) groups that we want to 
 | $ADGroupsOUs  | Array of string values of which AD OUs to include in search for groups | Optional, when no OUs are provided ($ADGroupsOUs = @()), all ous will be queried  |
 | $ProductAccessGroup  | String value of which HelloID group will have access to the products | Optional, if not found, the product is created without Access Group  |
 | $ProductCategory  | String value of which HelloID category will be used for the products | Required, must be an existing category if not found, the task will fail  |
-| $useADManagedByGroupAsResourceOwner  | Boolean value of whether to use the AD "ManagedBy" as resource owner for the products | Optional, can only be used when the "ManagedBy" is a group, does not work for user  |
+| $calculateProductResourceOwnerInAD  | Boolean value of whether to use the AD "ManagedBy" as resource owner for the products | Optional, can only be used when the "ManagedBy" is a group, does not work for user  |
+| $calculatedResourceOwnerGroupSource  | String value of the source of the groups | Optional, if left empty, this will result in creation of a new group  |
 | $SAProductResourceOwner  | String value of which HelloID group to use as resource owner for the products | Optional, if empty the groupname will be: "Resource owners [target-systeem] - [Product_Naam]")  |
 | $SAProductWorkflow  | String value of which HelloID Approval Workflow to use for the products | Optional, if empty. The Default HelloID Workflow is used. If specified Workflow does not exist the task will fail  |
 | $FaIcon  | String value of which Font Awesome icon to use for the products | For more valid icon names, see the Font Awesome cheat sheet [here](https://fontawesome.com/v5/cheatsheet)  |
