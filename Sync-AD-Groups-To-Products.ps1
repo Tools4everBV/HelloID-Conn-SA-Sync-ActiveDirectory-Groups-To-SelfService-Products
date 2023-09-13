@@ -1,11 +1,11 @@
 #####################################################
-# HelloID-SA-Sync-AD-Application-Groups-To-Products
+# HelloID-SA-Sync-AD-Groups-To-Products
 #
 # Version: 1.0.0
 #####################################################
-$VerbosePreference = 'SilentlyContinue'
-$informationPreference = 'Continue'
-$WarningPreference = 'Continue'
+$VerbosePreference = "SilentlyContinue"
+$informationPreference = "Continue"
+$WarningPreference = "Continue"
 
 # Set TLS to accept TLS, TLS 1.1 and TLS 1.2
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls12
@@ -18,7 +18,7 @@ $verboseLogging = $false
 # Make sure to create the Global variables defined below in HelloID
 #HelloID Connection Configuration
 # $script:PortalBaseUrl = "" # Set from Global Variable
-# $portalApiKey ="" # Set from Global Variable
+# $portalApiKey = "" # Set from Global Variable
 # $portalApiSecret = "" # Set from Global Variable
 
 #Target Connection Configuration   # Needed for accessing the Target System (These variables are also required for the Actions of each product)
@@ -27,13 +27,14 @@ $ADGroupsOUs = @("OU=IAM,OU=Groups,DC=Florence,DC=local")
 
 #HelloID Product Configuration
 $ProductAccessGroup = "enyoi.org\Users"  # If not found, the product is created without extra Access Group
-$ProductCategory = 'Applicatiegroepen' # If the category is not found, it will be created
+$ProductCategory = "Applicatiegroepen" # If the category is not found, it will be created
 $calculateProductResourceOwnerInAD = $true # If True the resource owner group will be defined per product based on ManagedBy of AD group - has to be additionaly configured, starting at line 1189!
-$SAProductResourceOwner = '' # If left empty the groupname will be: "Resource owners [target-systeem] - [Product_Naam]") - Only used when is false
-$SAProductWorkflow = 'Approval by resource owner' # If empty. The Default HelloID Workflow is used. If specified Workflow does not exist the Product creation will raise an error.
-$FaIcon = 'windows'
-$productVisibility = 'All'
-$productRequestCommentOption = 'Required' # Define if comments can be added when requesting the product. Supported options: Optional, Hidden, Required
+$calculatedResourceOwnerGroupSource = "AzureAD" # Specify the source of the groups - if left empty, this will result in creation of a new group
+$SAProductResourceOwner = "" # If left empty the groupname will be: "Resource owners [target-systeem] - [Product_Naam]") - Only used when is false
+$SAProductWorkflow = "Approval by resource owner" # If empty. The Default HelloID Workflow is used. If specified Workflow does not exist the Product creation will raise an error.
+$FaIcon = "windows"
+$productVisibility = "All"
+$productRequestCommentOption = "Required" # Define if comments can be added when requesting the product. Supported options: Optional, Hidden, Required
 $returnProductOnUserDisable = $false # If True the product will be returned when the user owning the product gets disabled
 $createDefaultEmailActions = $true # If True the default email actions will be enabled
 $multipleRequestOption = 1 # How many times a product can be requested. 1: Once. 2: Multiple times.
@@ -297,7 +298,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error querying AD user that matches filter [$($queryADUserSplatParams.Filter)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -325,7 +326,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error querying AD group that matches filter [$($queryADGroupSplatParams.Filter)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -352,7 +353,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error adding AD user [$($addADGroupMemberSplatParams.Members)] to AD group [$($addADGroupMemberSplatParams.Identity)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -449,7 +450,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error querying AD user that matches filter [$($queryADUserSplatParams.Filter)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -477,7 +478,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error querying AD group that matches filter [$($queryADGroupSplatParams.Filter)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -504,7 +505,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error removing AD user [$($removeADGroupMemberSplatParams.Members)] from AD group [$($removeADGroupMemberSplatParams.Identity)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -517,14 +518,14 @@ Hid-Write-Status -Event Information -Message "Starting synchronization of Active
 Hid-Write-Status -Event Information -Message "------[Active Directory]-----------"
     
 try {
-    $moduleName = 'ActiveDirectory'
+    $moduleName = "ActiveDirectory"
     $importModule = Import-Module -Name $moduleName -ErrorAction Stop
 }
 catch {
     $ex = $PSItem
     $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-    Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+    Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
     throw "Error importing module [$moduleName]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -554,7 +555,7 @@ try {
         $adGroups = [System.Collections.ArrayList]@()
         foreach ($ADGroupsOU in $ADGroupsOUs) {
             Hid-Write-Status -Event Information -Message "Querying AD groups that match filter [$($adQuerySplatParams.Filter)] in OU [$($ADGroupsOU)]"
-            $adGroupsInOU = Get-ADGroup @adQuerySplatParams -SearchBase $ADGroupsOU | Select-Object $properties
+            $adGroupsInOU = Get-ADGroup @adQuerySplatParams -SearchBase $ADGroupsOU -SearchScope OneLevel | Select-Object $properties
             if ($adGroupsInOU -is [array]) {
                 [void]$adGroups.AddRange($adGroupsInOU)
             }
@@ -569,15 +570,7 @@ try {
 
     $adGroupsInScope = [System.Collections.Generic.List[Object]]::New()
     foreach ($adGroup in $adGroups) {
-        # Custom - Only process groups with a description
-        if ([string]::IsNullOrEmpty($adGroup.description)) {
-            if ($verboseLogging -eq $true) {
-                Hid-Write-Status -Event Warning "No description set in AD for AD group [$($adGroups)]"
-            }
-        }
-        else {
-            [void]$adGroupsInScope.Add($adGroup)
-        }
+        [void]$adGroupsInScope.Add($adGroup)
     }
 
     if (($adGroupsInScope | Measure-Object).Count -eq 0) {
@@ -732,8 +725,6 @@ try {
     $helloIDGroupsInScope = $null
     $helloIDGroupsInScope = $helloIDGroups 
 
-    $helloIDGroupsInScopeGroupedByName = $helloIDGroupsInScope | Group-Object -Property "name" -AsHashTable -AsString
-    
     $helloIDGroupsInScope | Add-Member -MemberType NoteProperty -Name SourceAndName -Value $null
     $helloIDGroupsInScope | ForEach-Object {
         if ([string]::IsNullOrEmpty($_.source)) {
@@ -762,17 +753,22 @@ try {
         # Define ManagedBy Group
         if ( $calculateProductResourceOwnerInAD -eq $true ) {
             if (-not[string]::IsNullOrEmpty($($adGroupInScope.managedBy))) {
-                [regex]$adGroupNameRegex = "(?<=CN=)(.*)(?=,OU=)"
-                $ManagedByGroupName = $adGroupNameRegex.Matches("$($adGroupInScope.managedBy)") | foreach-object { $_.Value }
+                # First apply regex to match for the name of the group (within the CN)
+                $groupNameMatches = [regex]::Matches("$($adGroupInScope.managedBy)", "(?s)(?<=CN=).*?(?=,OU=)")
+                # If a match is found, select the value (always select the last in cases of multiple matches
+                $groupName = $groupNameMatches.Groups[-1].Value
+                # Finally, create the full name of source and groupname
+                $ManagedByGroupName = "$($calculatedResourceOwnerGroupSource)\$($groupName)"
             }
             else {
+                $ManagedByGroupName = if ([string]::IsNullOrWhiteSpace($SAProductResourceOwner) ) { "local\$($adGroupInScope.name) Resource Owners" } else { $SAProductResourceOwner }
                 if ($verboseLogging -eq $true) {
-                    Hid-Write-Status -Event Warning "No manager set in AD for AD group [$($adGroupInScope.name)]"
+                    Hid-Write-Status -Event Warning "No manager set in AD for AD group [$($adGroupInScope.name)]. Using default resource owner group [$($ManagedByGroupName)]"
                 }
             }
         }
         else {
-            $ManagedByGroupName = if ([string]::IsNullOrWhiteSpace($SAProductResourceOwner) ) { "$($adGroupInScope.name) Resource Owners" } else { $SAProductResourceOwner }
+            $ManagedByGroupName = if ([string]::IsNullOrWhiteSpace($SAProductResourceOwner) ) { "local\$($adGroupInScope.name) Resource Owners" } else { $SAProductResourceOwner }
         }
 
         # Define actions for product
@@ -788,7 +784,7 @@ try {
             powerShellScript    = $addADUserToADGroupScript
             variables           = @(
                 @{
-                    "name"           = "GroupId"
+                    "name"           = "Group"
                     "value"          = "$($adGroupInScope.samAccountName)"
                     "typeConstraint" = "string"
                     "secure"         = $false
@@ -813,7 +809,7 @@ try {
             powerShellScript    = $removeADUserFromADGroupScript
             variables           = @(
                 @{
-                    "name"           = "GroupId"
+                    "name"           = "Group"
                     "value"          = "$($adGroupInScope.samAccountName)"
                     "typeConstraint" = "string"
                     "secure"         = $false
@@ -829,7 +825,7 @@ try {
         [void]$PowerShellActions.Add($removeADUserFromADGroupAction)        
 
         $productObject = [PSCustomObject]@{
-            Name                       = "$($adGroupInScope.description)"
+            Name                       = "$($adGroupInScope.name)"
             Description                = "Access to the group $($adGroupInScope.name)"
             Categories                 = @($helloIDSelfserviceCategoriesInScope.name)
             ApprovalWorkflowName       = $SAProductWorkflow
@@ -910,45 +906,53 @@ try {
             # Get HelloID Resource Owner Group and create if it doesn't exist
             $helloIDResourceOwnerGroup = $null
             if (-not[string]::IsNullOrEmpty($newProduct.ManagedByGroupName)) {
-                $helloIDResourceOwnerGroup = $helloIDGroupsInScopeGroupedByName[$newProduct.ManagedByGroupName]
-                if ($null -eq $helloIDResourceOwnerGroup ) {
-                    # Create HelloID Resource Owner Group
-                    try {
-                        # if ($verboseLogging -eq $true) {
-                        #     Hid-Write-Status -Event Information "Creating new resource owner group [$($newProduct.ManagedByGroupName)] for HelloID Self service Product [$($newProduct.Name)]"
-                        # }
-                        
-                        $helloIDGroupBody = @{
-                            Name      = "$($newProduct.ManagedByGroupName)"
-                            IsEnabled = $true
-                        }
+                $helloIDResourceOwnerGroup = $helloIDGroupsInScopeGroupedBySourceAndName["$($newProduct.ManagedByGroupName)"]
+                if ($null -eq $helloIDResourceOwnerGroup) {
+                    # Only create group if it's a local group (otherwise sync should handle this)
+                    if ($newProduct.ManagedByGroupName -like "local\*") {
+                        # Create HelloID Resource Owner Group
+                        try {
+                            # if ($verboseLogging -eq $true) {
+                            #     Hid-Write-Status -Event Information "Creating new resource owner group [$($newProduct.ManagedByGroupName)] for HelloID Self service Product [$($newProduct.Name)]"
+                            # }
+                            
+                            $helloIDGroupBody = @{
+                                Name      = "$($newProduct.ManagedByGroupName)"
+                                IsEnabled = $true
+                            }
 
-                        $splatParams = @{
-                            Method = "POST"
-                            Uri    = "groups"
-                            Body   = ($helloIDGroupBody | ConvertTo-Json -Depth 10)
-                        }
+                            $splatParams = @{
+                                Method = "POST"
+                                Uri    = "groups"
+                                Body   = ($helloIDGroupBody | ConvertTo-Json -Depth 10)
+                            }
 
-                        if ($dryRun -eq $false) {
-                            $helloIDResourceOwnerGroup = Invoke-HIDRestMethod @splatParams
-        
-                            if ($verboseLogging -eq $true) {
-                                Hid-Write-Status -Event Success "Successfully created new resource owner group [$($newProduct.ManagedByGroupName)] for HelloID Self service Product [$($newProduct.Name)]"
+                            if ($dryRun -eq $false) {
+                                $helloIDResourceOwnerGroup = Invoke-HIDRestMethod @splatParams
+            
+                                if ($verboseLogging -eq $true) {
+                                    Hid-Write-Status -Event Success "Successfully created new resource owner group [$($newProduct.ManagedByGroupName)] for HelloID Self service Product [$($newProduct.Name)]"
+                                }
+                            }
+                            else {
+                                if ($verboseLogging -eq $true) {
+                                    Hid-Write-Status -Event Warning "DryRun: Would create new resource owner group [$($newProduct.ManagedByGroupName)] for HelloID Self service Product [$($newProduct.Name)]"
+                                }
                             }
                         }
-                        else {
-                            if ($verboseLogging -eq $true) {
-                                Hid-Write-Status -Event Warning "DryRun: Would create new resource owner group [$($newProduct.ManagedByGroupName)] for HelloID Self service Product [$($newProduct.Name)]"
-                            }
+                        catch {
+                            $ex = $PSItem
+                            $errorMessage = Get-ErrorMessage -ErrorObject $ex
+                            
+                            Hid-Write-Status -Event Error -Message "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+                            
+                            throw "Error creating new resource owner group [$($newProduct.ManagedByGroupName)] for HelloID Self service Product [$($newProduct.Name)]. Error Message: $($errorMessage.AuditErrorMessage)"
                         }
                     }
-                    catch {
-                        $ex = $PSItem
-                        $errorMessage = Get-ErrorMessage -ErrorObject $ex
-                        
-                        Hid-Write-Status -Event Error -Message "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
-                        
-                        throw "Error creating new resource owner group [$($newProduct.ManagedByGroupName)] for HelloID Self service Product [$($newProduct.Name)]. Error Message: $($errorMessage.AuditErrorMessage)"
+                    else {
+                        if ($verboseLogging -eq $true) {
+                            Hid-Write-Status -Event Warning "No resource owner group [$($newProduct.ManagedByGroupName)] found for HelloID Self service Product [$($newProduct.Name)]"
+                        }
                     }
                 }
             }
@@ -987,7 +991,9 @@ try {
                     }
                 }
                 else {
-                    Hid-Write-Status -Event Warning "DryRun: Would create HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
+                    if ($verboseLogging -eq $true) {
+                        Hid-Write-Status -Event Warning "DryRun: Would create HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
+                    }
                 }
             }
             catch {
@@ -1206,31 +1212,30 @@ try {
                 $productDisablesError++
                 throw "Error disabling HelloID Self service Product [$($obsoleteProduct.Name)]. Error Message: $($errorMessage.AuditErrorMessage)"
             }
-
-            if ($removeProduct -eq $true) {
-                if ($dryRun -eq $false) {
-                    if ($productRemovesSuccess -ge 1 -or $productRemoveserror -ge 1) {
-                        Hid-Write-Status -Event Information -Message "Removed HelloID Self service Products. Success: $($productRemovesSuccess). Error: $($productRemoveserror)"
-                        Hid-Write-Summary -Event Information -Message "Removed HelloID Self service Products. Success: $($productRemovesSuccess). Error: $($productRemoveserror)"
-                    }
-                }
-                else {
-                    Hid-Write-Status -Event Warning -Message "DryRun: Would remove [$(($obsoleteProducts | Measure-Object).Count)] HelloID Self service Products"
-                    Hid-Write-Status -Event Warning -Message "DryRun: Would remove [$(($obsoleteProducts | Measure-Object).Count)] HelloID Self service Products"
-                }
+        }
+    }
+    if ($removeProduct -eq $true) {
+        if ($dryRun -eq $false) {
+            if ($productRemovesSuccess -ge 1 -or $productRemoveserror -ge 1) {
+                Hid-Write-Status -Event Information -Message "Removed HelloID Self service Products. Success: $($productRemovesSuccess). Error: $($productRemoveserror)"
+                Hid-Write-Summary -Event Information -Message "Removed HelloID Self service Products. Success: $($productRemovesSuccess). Error: $($productRemoveserror)"
             }
-            else {
-                if ($dryRun -eq $false) {
-                    if ($productDisablesSuccess -ge 1 -or $productDisablesError -ge 1) {
-                        Hid-Write-Status -Event Information -Message "Disabled HelloID Self service Products. Success: $($productDisablesSuccess). Error: $($productDisablesError)"
-                        Hid-Write-Summary -Event Information -Message "Disabled HelloID Self service Products. Success: $($productDisablesSuccess). Error: $($productDisablesError)"
-                    }
-                }
-                else {
-                    Hid-Write-Status -Event Warning -Message "DryRun: Would disable [$(($obsoleteProducts | Measure-Object).Count)] HelloID Self service Products"
-                    Hid-Write-Status -Event Warning -Message "DryRun: Would disable [$(($obsoleteProducts | Measure-Object).Count)] HelloID Self service Products"
-                }
+        }
+        else {
+            Hid-Write-Status -Event Warning -Message "DryRun: Would remove [$(($obsoleteProducts | Measure-Object).Count)] HelloID Self service Products"
+            Hid-Write-Status -Event Warning -Message "DryRun: Would remove [$(($obsoleteProducts | Measure-Object).Count)] HelloID Self service Products"
+        }
+    }
+    else {
+        if ($dryRun -eq $false) {
+            if ($productDisablesSuccess -ge 1 -or $productDisablesError -ge 1) {
+                Hid-Write-Status -Event Information -Message "Disabled HelloID Self service Products. Success: $($productDisablesSuccess). Error: $($productDisablesError)"
+                Hid-Write-Summary -Event Information -Message "Disabled HelloID Self service Products. Success: $($productDisablesSuccess). Error: $($productDisablesError)"
             }
+        }
+        else {
+            Hid-Write-Status -Event Warning -Message "DryRun: Would disable [$(($obsoleteProducts | Measure-Object).Count)] HelloID Self service Products"
+            Hid-Write-Status -Event Warning -Message "DryRun: Would disable [$(($obsoleteProducts | Measure-Object).Count)] HelloID Self service Products"
         }
     }
 
@@ -1245,7 +1250,7 @@ try {
                 # Get HelloID Resource Owner Group and create if it doesn't exist
                 if (-not[string]::IsNullOrEmpty($existingProduct.ManagedByGroupName)) {
                     $helloIDResourceOwnerGroup = $null
-                    $helloIDResourceOwnerGroup = $helloIDGroupsInScopeGroupedByName[$existingProduct.ManagedByGroupName]
+                    $helloIDResourceOwnerGroup = $helloIDGroupsInScopeGroupedBySourceAndName["$($existingProduct.ManagedByGroupName)"]
                     if ($null -eq $helloIDResourceOwnerGroup ) {
                         # Create HelloID Resource Owner Group
                         try {
