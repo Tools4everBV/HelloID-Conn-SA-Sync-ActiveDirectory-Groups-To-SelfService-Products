@@ -3,9 +3,9 @@
 #
 # Version: 1.0.0
 #####################################################
-$VerbosePreference = 'SilentlyContinue'
-$informationPreference = 'Continue'
-$WarningPreference = 'Continue'
+$VerbosePreference = "SilentlyContinue"
+$informationPreference = "Continue"
+$WarningPreference = "Continue"
 
 # Set TLS to accept TLS, TLS 1.1 and TLS 1.2
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls12
@@ -27,13 +27,13 @@ $ADGroupsOUs = @("OU=IAM,OU=Groups,DC=Florence,DC=local")
 
 #HelloID Product Configuration
 $ProductAccessGroup = "enyoi.org\Users"  # If not found, the product is created without extra Access Group
-$ProductCategory = 'Applicatiegroepen' # If the category is not found, it will be created
+$ProductCategory = "Applicatiegroepen" # If the category is not found, it will be created
 $calculateProductResourceOwnerInAD = $true # If True the resource owner group will be defined per product based on ManagedBy of AD group - has to be additionaly configured, starting at line 1189!
-$SAProductResourceOwner = '' # If left empty the groupname will be: "Resource owners [target-systeem] - [Product_Naam]") - Only used when is false
-$SAProductWorkflow = 'Approval by resource owner' # If empty. The Default HelloID Workflow is used. If specified Workflow does not exist the Product creation will raise an error.
-$FaIcon = 'windows'
-$productVisibility = 'All'
-$productRequestCommentOption = 'Required' # Define if comments can be added when requesting the product. Supported options: Optional, Hidden, Required
+$SAProductResourceOwner = "" # If left empty the groupname will be: "Resource owners [target-systeem] - [Product_Naam]") - Only used when is false
+$SAProductWorkflow = "Approval by resource owner" # If empty. The Default HelloID Workflow is used. If specified Workflow does not exist the Product creation will raise an error.
+$FaIcon = "windows"
+$productVisibility = "All"
+$productRequestCommentOption = "Required" # Define if comments can be added when requesting the product. Supported options: Optional, Hidden, Required
 $returnProductOnUserDisable = $false # If True the product will be returned when the user owning the product gets disabled
 $createDefaultEmailActions = $true # If True the default email actions will be enabled
 $multipleRequestOption = 1 # How many times a product can be requested. 1: Once. 2: Multiple times.
@@ -297,7 +297,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error querying AD user that matches filter [$($queryADUserSplatParams.Filter)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -325,7 +325,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error querying AD group that matches filter [$($queryADGroupSplatParams.Filter)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -352,7 +352,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error adding AD user [$($addADGroupMemberSplatParams.Members)] to AD group [$($addADGroupMemberSplatParams.Identity)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -449,7 +449,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error querying AD user that matches filter [$($queryADUserSplatParams.Filter)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -477,7 +477,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error querying AD group that matches filter [$($queryADGroupSplatParams.Filter)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -504,7 +504,7 @@ catch {
   $ex = $PSItem
   $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-  Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+  Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
   throw "Error removing AD user [$($removeADGroupMemberSplatParams.Members)] from AD group [$($removeADGroupMemberSplatParams.Identity)]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
@@ -517,14 +517,14 @@ Hid-Write-Status -Event Information -Message "Starting synchronization of Active
 Hid-Write-Status -Event Information -Message "------[Active Directory]-----------"
     
 try {
-    $moduleName = 'ActiveDirectory'
+    $moduleName = "ActiveDirectory"
     $importModule = Import-Module -Name $moduleName -ErrorAction Stop
 }
 catch {
     $ex = $PSItem
     $errorMessage = Get-ErrorMessage -ErrorObject $ex
 
-    Write-Verbose "Error at Line '$($ex.InvocationInfo.ScriptLineNumber)': $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+    Write-Verbose "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
 
     throw "Error importing module [$moduleName]. Error Message: $($errorMessage.AuditErrorMessage)"
 }
