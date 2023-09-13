@@ -570,15 +570,7 @@ try {
 
     $adGroupsInScope = [System.Collections.Generic.List[Object]]::New()
     foreach ($adGroup in $adGroups) {
-        # Custom - Only process groups with a description
-        if ([string]::IsNullOrEmpty($adGroup.description)) {
-            if ($verboseLogging -eq $true) {
-                Hid-Write-Status -Event Warning "No description set in AD for AD group [$($adGroups)]"
-            }
-        }
-        else {
-            [void]$adGroupsInScope.Add($adGroup)
-        }
+        [void]$adGroupsInScope.Add($adGroup)
     }
 
     if (($adGroupsInScope | Measure-Object).Count -eq 0) {
@@ -833,7 +825,7 @@ try {
         [void]$PowerShellActions.Add($removeADUserFromADGroupAction)        
 
         $productObject = [PSCustomObject]@{
-            Name                       = "$($adGroupInScope.description)"
+            Name                       = "$($adGroupInScope.name)"
             Description                = "Access to the group $($adGroupInScope.name)"
             Categories                 = @($helloIDSelfserviceCategoriesInScope.name)
             ApprovalWorkflowName       = $SAProductWorkflow
