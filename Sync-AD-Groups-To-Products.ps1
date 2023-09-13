@@ -1,5 +1,5 @@
 #####################################################
-# HelloID-SA-Sync-AD-Application-Groups-To-Products
+# HelloID-SA-Sync-AD-Groups-To-Products
 #
 # Version: 1.0.0
 #####################################################
