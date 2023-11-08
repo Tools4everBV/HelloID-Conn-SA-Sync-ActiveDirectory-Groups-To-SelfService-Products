@@ -31,9 +31,9 @@ Synchronizes AD groups to HelloID Self service products
 
 By using this connector, you will have the ability to create and remove HelloID SelfService Products based on groups in your local Active Directory.
 
-The products will be create for each group in scope. This way you won't have to manually create a product for each group.
+The products will be created for each group in scope. This way you won't have to manually create a product for each group.
 
-And vice versa for the removing of the products. The products will be removed (or disabled, based on your preference) when a group is nog longer in scope. This way no products will remain that "should no longer exist".
+And vice versa for the removing of the products. The products will be removed (or disabled, based on your preference) when a group is no longer in scope. This way no products will remain that "should no longer exist".
 
 This is intended for scenarios where there are (lots of) groups that we want to be requestable as a product. This group sync is desinged to work in combination with the [ActiveDirectory Groupmembersips to Productassignments Sync](https://github.com/Tools4everBV/HelloID-Conn-SA-Sync-ActiveDirectory-Groupmemberships-To-SelfService-Productassignments).
 
