@@ -1,7 +1,7 @@
 #####################################################
 # HelloID-SA-Sync-AD-Groups-To-Products
 #
-# Version: 2.2.0
+# Version: 2.2.1
 #####################################################
 $VerbosePreference = "SilentlyContinue"
 $informationPreference = "Continue"
@@ -43,7 +43,9 @@ $productReturnOnUserDisable = $true # If True the product will be returned when 
 
 $removeProduct = $true # If False product will be disabled
 $overwriteExistingProduct = $true # If True existing product will be overwritten with the input from this script (e.g. the approval worklow or icon). Only use this when you actually changed the product input
-# Note: Actions are always overwritten
+# Note: Actions are always overwritten, no compare takes place between the current actions and the actions this sync would set
+$overwriteAccessGroup = $false # Should be on false by default, only set this to true to overwrite product access group - Only meant for "manual" bulk update, not daily scheduled
+# Note: Access group is always overwritten, no compare takes place between the current access group and the access group this sync would set
 
 #Target System Configuration
 # Dynamic property invocation
@@ -828,10 +830,10 @@ try {
             name                       = "$($adGroupInScope.name)"
             description                = "Access to the group $($adGroupInScope.name)"
             code                       = ("$($ProductSKUPrefix)" + "$($adGroupInScope.$adGroupUniqueProperty)").Replace("-", "")
-            resourceOwnerGroup         = @{
+            resourceOwnerGroup         = [PSCustomObject]@{
                 id = $helloIDResourceOwnerGroup.groupGuid
             }
-            approvalWorkflow           = @{
+            approvalWorkflow           = [PSCustomObject]@{
                 id = $productApprovalWorkflowId
             }
             showPrice                  = $false
@@ -846,11 +848,11 @@ try {
             useFaIcon                  = $true 
             faIcon                     = "fa-$productFaIcon"
             categories                 = @(
-                @{
+                [PSCustomObject]@{
                     id = "$($helloIDSelfserviceCategoriesInScope.selfServiceCategoryGUID)"
                 }
             )
-            agentPool                  = @{
+            agentPool                  = [PSCustomObject]@{
                 id = "$($helloIDAgentPoolsInScope.agentPoolGUID)"
             }
             returnOnUserDisable        = $productReturnOnUserDisable
@@ -1161,33 +1163,50 @@ try {
                     }
 
                     # Calculate changes between current data and provided data
+                    $actionProperties = @("onRequest", "onApprove", "onApprove", "onDeny", "onReturn", "onWithdrawn")
                     $splatCompareProperties = @{
                         ReferenceObject  = @($currentProductInHelloID.PSObject.Properties)
-                        DifferenceObject = @($existingProduct.PSObject.Properties) # Only select the properties to update
+                        DifferenceObject = @($existingProduct.PSObject.Properties | Where-Object { $_.Name -notin $actionProperties }) # exclude the action variables, as aren't in the current product object
                     }
                     $changedProperties = $null
                     $changedProperties = (Compare-Object @splatCompareProperties -PassThru)
                     $newProperties = $changedProperties.Where( { $_.SideIndicator -eq "=>" })
 
-                    foreach ($newProperty in $newProperties) {
-                        $updateHelloIDSelfServiceProductBody | Add-Member -MemberType NoteProperty -Name $newProperty.Name -Value $newProperty.Value -Force
-                    }
+                    if (($newProperties | Measure-Object).Count -ge 1) {
+                        foreach ($newProperty in $newProperties) {
+                            $updateHelloIDSelfServiceProductBody | Add-Member -MemberType NoteProperty -Name $newProperty.Name -Value $newProperty.Value -Force
+                        }
+                        # Always add the product actions, as they aren't in the current product object and otherwise it will be a product without actions
+                        foreach ($actionProperty in $actionProperties) {
+                            $updateHelloIDSelfServiceProductBody | Add-Member -MemberType NoteProperty -Name $actionProperty -Value $existingProduct.$actionProperty -Force
+                        }
 
-                    $splatParams = @{
-                        Method = "POST"
-                        Uri    = "products"
-                        Body   = ($updateHelloIDSelfServiceProductBody | ConvertTo-Json -Depth 10)
-                    }
-
-                    if ($dryRun -eq $false) {
-                        $updatedHelloIDSelfServiceProduct = Invoke-HIDRestMethod @splatParams
-
-                        if ($verboseLogging -eq $true) {
-                            Hid-Write-Status -Event Success "Successfully updated HelloID Self service Product [$($updateHelloIDSelfServiceProductBody.Name)]"
+                        $splatParams = @{
+                            Method = "POST"
+                            Uri    = "products"
+                            Body   = ($updateHelloIDSelfServiceProductBody | ConvertTo-Json -Depth 10)
+                        }
+    
+                        if ($dryRun -eq $false) {
+                            $updatedHelloIDSelfServiceProduct = Invoke-HIDRestMethod @splatParams
+    
+                            if ($verboseLogging -eq $true) {
+                                Hid-Write-Status -Event Success "Successfully updated HelloID Self service Product [$($updateHelloIDSelfServiceProductBody.Name)]"
+                            }
+                        }
+                        else {
+                            Hid-Write-Status -Event Warning "DryRun: Would update HelloID Self service Product [$($updateHelloIDSelfServiceProductBody.name)]"
                         }
                     }
                     else {
-                        Hid-Write-Status -Event Warning "DryRun: Would update HelloID Self service Product [$($updateHelloIDSelfServiceProductBody.name)]"
+                        if ($dryRun -eq $false) {
+                            if ($verboseLogging -eq $true) {
+                                Hid-Write-Status -Event Success "No changes to HelloID Self service Product [$($updateHelloIDSelfServiceProductBody.Name)]"
+                            }
+                        }
+                        else {
+                            Hid-Write-Status -Event Warning "DryRun: No changes to HelloID Self service Product [$($updateHelloIDSelfServiceProductBody.Name)]"
+                        }
                     }
                 }
                 catch {
@@ -1199,48 +1218,50 @@ try {
                     throw "Error updating HelloID Self service Product [$($updateHelloIDSelfServiceProductBody.name)]. Error Message: $($errorMessage.AuditErrorMessage)"
                 }
 
-                # Get HelloID Access Group
-                $helloIDAccessGroup = $null
-                $helloIDAccessGroup = $helloIDGroupsInScopeGroupedBySourceAndName["$($productAccessGroup)"]
+                if ($overwriteAccessGroup -eq $true) {
+                    # Get HelloID Access Group
+                    $helloIDAccessGroup = $null
+                    $helloIDAccessGroup = $helloIDGroupsInScopeGroupedBySourceAndName["$($productAccessGroup)"]
 
-                # Add HelloID Access Group to HelloID Self service Product
-                if (-not $null -eq $helloIDAccessGroup) {
-                    try {
-                        $addHelloIDAccessGroupToProductBody = @{
-                            GroupGuid = "$($helloIDAccessGroup.groupGuid)"
-                        }
+                    # Add HelloID Access Group to HelloID Self service Product
+                    if (-not $null -eq $helloIDAccessGroup) {
+                        try {
+                            $addHelloIDAccessGroupToProductBody = @{
+                                GroupGuid = "$($helloIDAccessGroup.groupGuid)"
+                            }
 
-                        $splatParams = @{
-                            Method = "POST"
-                            Uri    = "selfserviceproducts/$($currentProductInHelloID.productId)/groups"
-                            Body   = ($addHelloIDAccessGroupToProductBody | ConvertTo-Json -Depth 10)
-                        }
+                            $splatParams = @{
+                                Method = "POST"
+                                Uri    = "selfserviceproducts/$($currentProductInHelloID.productId)/groups"
+                                Body   = ($addHelloIDAccessGroupToProductBody | ConvertTo-Json -Depth 10)
+                            }
 
-                        if ($dryRun -eq $false) {
-                            $addHelloIDAccessGroupToProduct = Invoke-HIDRestMethod @splatParams
+                            if ($dryRun -eq $false) {
+                                $addHelloIDAccessGroupToProduct = Invoke-HIDRestMethod @splatParams
 
-                            if ($verboseLogging -eq $true) {
-                                Hid-Write-Status -Event Success "Successfully added HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($updatedHelloIDSelfServiceProduct.Name)]"
+                                if ($verboseLogging -eq $true) {
+                                    Hid-Write-Status -Event Success "Successfully added HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($updatedHelloIDSelfServiceProduct.Name)]"
+                                }
+                            }
+                            else {
+                                if ($verboseLogging -eq $true) {
+                                    Hid-Write-Status -Event Warning "DryRun: Would add HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($updatedHelloIDSelfServiceProduct.Name)]"
+                                }
                             }
                         }
-                        else {
-                            if ($verboseLogging -eq $true) {
-                                Hid-Write-Status -Event Warning "DryRun: Would add HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($updatedHelloIDSelfServiceProduct.Name)]"
-                            }
+                        catch {
+                            $ex = $PSItem
+                            $errorMessage = Get-ErrorMessage -ErrorObject $ex
+                    
+                            Hid-Write-Status -Event Error -Message "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+                    
+                            throw "Error adding HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($updatedHelloIDSelfServiceProduct.Name)]. Error Message: $($errorMessage.AuditErrorMessage)"
                         }
                     }
-                    catch {
-                        $ex = $PSItem
-                        $errorMessage = Get-ErrorMessage -ErrorObject $ex
-                
-                        Hid-Write-Status -Event Error -Message "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
-                
-                        throw "Error adding HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($updatedHelloIDSelfServiceProduct.Name)]. Error Message: $($errorMessage.AuditErrorMessage)"
-                    }
-                }
-                else {
-                    if ($verboseLogging -eq $true) {
-                        Hid-Write-Status  -Event Warning -Message "The Specified HelloID Access Group [$($productAccessGroup)] does not exist. We will continue without adding the access Group to HelloID Self service Product [$($updatedHelloIDSelfServiceProduct.Name)]"
+                    else {
+                        if ($verboseLogging -eq $true) {
+                            Hid-Write-Status  -Event Warning -Message "The Specified HelloID Access Group [$($productAccessGroup)] does not exist. We will continue without adding the access Group to HelloID Self service Product [$($updatedHelloIDSelfServiceProduct.Name)]"
+                        }
                     }
                 }
                 
