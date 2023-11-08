@@ -707,15 +707,15 @@ try {
             if (-not[string]::IsNullOrEmpty($($adGroupInScope.managedBy))) {
                 # First apply regex to match for the name of the group (within the CN)
                 $groupNameMatches = [regex]::Matches("$($adGroupInScope.managedBy)", "(?s)(?<=CN=).*?(?=,OU=)")
-                # If a match is found, select the value (always select the last in cases of multiple matches
+                # If a match is found, select the value (always select the last in cases of multiple matches)
                 $groupName = $groupNameMatches.Groups[-1].Value
                 # Finally, create the full name of source and groupname
-                $ManagedByGroupName = "$($calculatedResourceOwnerGroupSource)\$($groupName)"
+                $resourceOwnerGroupName = "$($calculatedResourceOwnerGroupSource)/$($groupName)"
             }
             else {
                 $resourceOwnerGroupName = if ([string]::IsNullOrWhiteSpace($productResourseOwner) ) { "Local/$($adGroupInScope.DisplayName) Resource Owners" } else { $productResourseOwner }
                 if ($verboseLogging -eq $true) {
-                    Hid-Write-Status -Event Warning "No manager set in AD for AD group [$($adGroupInScope.name)]. Using default resource owner group [$($ManagedByGroupName)]"
+                    Hid-Write-Status -Event Warning "No manager set in AD for AD group [$($adGroupInScope.name)]. Using default resource owner group [$($resourceOwnerGroupName)]"
                 }
             }
         }
