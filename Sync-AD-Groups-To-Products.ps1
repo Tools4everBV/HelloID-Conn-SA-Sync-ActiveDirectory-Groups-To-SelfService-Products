@@ -22,7 +22,7 @@ $verboseLogging = $false
 # $portalApiSecret = "" # Set from Global Variable
 
 # Active Directory Connection Configuration
-$ADGroupsFilter = "name -like `"App-*`" -or name -like `"*-App`"" # Optional, when no filter is provided ($Filter = $null), all mailboxes will be queried
+$ADGroupsFilter = "name -like `"App-*`" -or name -like `"*-App`"" # Optional, if all groups need to be queried, the filter should be set to "*"
 $ADGroupsOUs = @("OU=IAM,OU=Groups,DC=Florence,DC=local")
 
 #HelloID Product Configuration
