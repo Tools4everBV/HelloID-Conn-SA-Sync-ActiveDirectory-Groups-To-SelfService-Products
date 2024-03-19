@@ -23,7 +23,7 @@ $verboseLogging = $false
 
 # Active Directory Connection Configuration
 $ADGroupsFilter = "name -like `"App-*`" -or name -like `"*-App`"" # Optional, if all groups need to be queried, the filter should be set to "*"
-$ADGroupsOUs = @("OU=IAM,OU=Groups,DC=Florence,DC=local")
+$ADGroupsOUs = @("OU=HelloID,OU=Groups,DC=Enyoi,DC=local")
 
 #HelloID Product Configuration
 $productAccessGroup = "Local/__HelloID Selfservice Users"  # If not found, the product is created without extra Access Group
