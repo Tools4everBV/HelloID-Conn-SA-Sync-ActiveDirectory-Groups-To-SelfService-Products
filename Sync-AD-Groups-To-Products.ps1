@@ -760,12 +760,12 @@ try {
                             $helloIDResourceOwnerGroup = Invoke-HIDRestMethod @splatParams
         
                             if ($verboseLogging -eq $true) {
-                                Hid-Write-Status -Event Success "Successfully created new resource owner group [$($resourceOwnerGroupName)] for HelloID Self service Product [$($newProduct.Name)]"
+                                Hid-Write-Status -Event Success "Successfully created new resource owner group [$($resourceOwnerGroupName)]"
                             }
                         }
                         else {
                             if ($verboseLogging -eq $true) {
-                                Hid-Write-Status -Event Warning "DryRun: Would create new resource owner group [$($resourceOwnerGroupName)] for HelloID Self service Product [$($newProduct.Name)]"
+                                Hid-Write-Status -Event Warning "DryRun: Would create new resource owner group [$($resourceOwnerGroupName)]"
                             }
                         }
                     }
@@ -775,12 +775,12 @@ try {
                         
                         Hid-Write-Status -Event Error -Message "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
                         
-                        throw "Error creating new resource owner group [$($resourceOwnerGroupName)] for HelloID Self service Product [$($newProduct.Name)]. Error Message: $($errorMessage.AuditErrorMessage)"
+                        throw "Error creating new resource owner group [$($resourceOwnerGroupName)]. Error Message: $($errorMessage.AuditErrorMessage)"
                     }
                 }
                 else {
                     if ($verboseLogging -eq $true) {
-                        Hid-Write-Status -Event Warning "No resource owner group [$($resourceOwnerGroupName)] found for HelloID Self service Product [$($newProduct.Name)]"
+                        Hid-Write-Status -Event Warning "No resource owner group [$($resourceOwnerGroupName)]"
                     }
                 }
             }
