@@ -713,26 +713,26 @@ try {
                 $resourceOwnerGroupName = "$($calculatedResourceOwnerGroupSource)/$($groupName)"
             }
             else {
-                $resourceOwnerGroupName = if ([string]::IsNullOrWhiteSpace($productResourseOwner) ) { "Local/$($adGroupInScope.DisplayName) Resource Owners" } else { $productResourseOwner }
+                $resourceOwnerGroupName = if ([string]::IsNullOrWhiteSpace($productResourceOwner) ) { "Local/$($adGroupInScope.Name) Resource Owners" } else { $productResourceOwner }
                 if ($verboseLogging -eq $true) {
-                    Hid-Write-Status -Event Warning "No manager set in AD for AD group [$($adGroupInScope.name)]. Using default resource owner group [$($resourceOwnerGroupName)]"
+                    Hid-Write-Status -Event Warning "No manager set in AD for AD group [$($adGroupInScope.Name)]. Using default resource owner group [$($resourceOwnerGroupName)]"
                 }
             }
         }
         elseif ( $calculateProductResourceOwnerPrefixSuffix -eq $true ) {
             # Calculate resource owner group by specfied prefix or suffix
             if (-not[string]::IsNullOrEmpty($($calculatedResourceOwnerGroupPrefix)) -or -not[string]::IsNullOrEmpty($($calculatedResourceOwnerGroupSuffix))) {
-                $resourceOwnerGroupName = "$($calculatedResourceOwnerGroupSource)/" + "$($calculatedResourceOwnerGroupPrefix)" + "$($adGroupInScope.DisplayName)" + "$($calculatedResourceOwnerGroupSuffix)"
+                $resourceOwnerGroupName = "$($calculatedResourceOwnerGroupSource)/" + "$($calculatedResourceOwnerGroupPrefix)" + "$($adGroupInScope.Name)" + "$($calculatedResourceOwnerGroupSuffix)"
             }
             elseif ([string]::IsNullOrEmpty($($calculatedResourceOwnerGroupPrefix)) -and [string]::IsNullOrEmpty($($calculatedResourceOwnerGroupSuffix))) {
-                $resourceOwnerGroupName = if ([string]::IsNullOrWhiteSpace($productResourseOwner) ) { "Local/$($adGroupInScope.DisplayName) Resource Owners" } else { $productResourseOwner }
+                $resourceOwnerGroupName = if ([string]::IsNullOrWhiteSpace($productResourceOwner) ) { "Local/$($adGroupInScope.Name) Resource Owners" } else { $productResourceOwner }
                 if ($verboseLogging -eq $true) {
                     Hid-Write-Status -Event Warning "No Resource Owner Group Prefix of Suffix specified. Using default resource owner group [$($resourceOwnerGroupName)]"
                 }
             }
         }
         else {
-            $resourceOwnerGroupName = if ([string]::IsNullOrWhiteSpace($productResourseOwner) ) { "Local/$($adGroupInScope.DisplayName) Resource Owners" } else { $productResourseOwner }
+            $resourceOwnerGroupName = if ([string]::IsNullOrWhiteSpace($productResourceOwner) ) { "Local/$($adGroupInScope.Name) Resource Owners" } else { $productResourceOwner }
         }
 
         # Get HelloID Resource Owner Group and create if it doesn't exist
