@@ -23,7 +23,7 @@ $verboseLogging = $false
 
 # Active Directory Connection Configuration
 $ADGroupsFilter = "name -like `"App-*`" -or name -like `"*-App`"" # Optional, if all groups need to be queried, the filter should be set to "*"
-$ADGroupsOUs = @("OU=IAM,OU=Groups,DC=Florence,DC=local")
+$ADGroupsOUs = @("OU=HelloID,OU=Groups,DC=Enyoi,DC=local")
 
 #HelloID Product Configuration
 $productAccessGroup = "Local/__HelloID Selfservice Users"  # If not found, the product is created without extra Access Group
@@ -713,26 +713,26 @@ try {
                 $resourceOwnerGroupName = "$($calculatedResourceOwnerGroupSource)/$($groupName)"
             }
             else {
-                $resourceOwnerGroupName = if ([string]::IsNullOrWhiteSpace($productResourseOwner) ) { "Local/$($adGroupInScope.DisplayName) Resource Owners" } else { $productResourseOwner }
+                $resourceOwnerGroupName = if ([string]::IsNullOrWhiteSpace($productResourceOwner) ) { "Local/$($adGroupInScope.Name) Resource Owners" } else { $productResourceOwner }
                 if ($verboseLogging -eq $true) {
-                    Hid-Write-Status -Event Warning "No manager set in AD for AD group [$($adGroupInScope.name)]. Using default resource owner group [$($resourceOwnerGroupName)]"
+                    Hid-Write-Status -Event Warning "No manager set in AD for AD group [$($adGroupInScope.Name)]. Using default resource owner group [$($resourceOwnerGroupName)]"
                 }
             }
         }
         elseif ( $calculateProductResourceOwnerPrefixSuffix -eq $true ) {
             # Calculate resource owner group by specfied prefix or suffix
             if (-not[string]::IsNullOrEmpty($($calculatedResourceOwnerGroupPrefix)) -or -not[string]::IsNullOrEmpty($($calculatedResourceOwnerGroupSuffix))) {
-                $resourceOwnerGroupName = "$($calculatedResourceOwnerGroupSource)/" + "$($calculatedResourceOwnerGroupPrefix)" + "$($adGroupInScope.DisplayName)" + "$($calculatedResourceOwnerGroupSuffix)"
+                $resourceOwnerGroupName = "$($calculatedResourceOwnerGroupSource)/" + "$($calculatedResourceOwnerGroupPrefix)" + "$($adGroupInScope.Name)" + "$($calculatedResourceOwnerGroupSuffix)"
             }
             elseif ([string]::IsNullOrEmpty($($calculatedResourceOwnerGroupPrefix)) -and [string]::IsNullOrEmpty($($calculatedResourceOwnerGroupSuffix))) {
-                $resourceOwnerGroupName = if ([string]::IsNullOrWhiteSpace($productResourseOwner) ) { "Local/$($adGroupInScope.DisplayName) Resource Owners" } else { $productResourseOwner }
+                $resourceOwnerGroupName = if ([string]::IsNullOrWhiteSpace($productResourceOwner) ) { "Local/$($adGroupInScope.Name) Resource Owners" } else { $productResourceOwner }
                 if ($verboseLogging -eq $true) {
                     Hid-Write-Status -Event Warning "No Resource Owner Group Prefix of Suffix specified. Using default resource owner group [$($resourceOwnerGroupName)]"
                 }
             }
         }
         else {
-            $resourceOwnerGroupName = if ([string]::IsNullOrWhiteSpace($productResourseOwner) ) { "Local/$($adGroupInScope.DisplayName) Resource Owners" } else { $productResourseOwner }
+            $resourceOwnerGroupName = if ([string]::IsNullOrWhiteSpace($productResourceOwner) ) { "Local/$($adGroupInScope.Name) Resource Owners" } else { $productResourceOwner }
         }
 
         # Get HelloID Resource Owner Group and create if it doesn't exist
@@ -760,12 +760,12 @@ try {
                             $helloIDResourceOwnerGroup = Invoke-HIDRestMethod @splatParams
         
                             if ($verboseLogging -eq $true) {
-                                Hid-Write-Status -Event Success "Successfully created new resource owner group [$($resourceOwnerGroupName)] for HelloID Self service Product [$($newProduct.Name)]"
+                                Hid-Write-Status -Event Success "Successfully created new resource owner group [$($resourceOwnerGroupName)]"
                             }
                         }
                         else {
                             if ($verboseLogging -eq $true) {
-                                Hid-Write-Status -Event Warning "DryRun: Would create new resource owner group [$($resourceOwnerGroupName)] for HelloID Self service Product [$($newProduct.Name)]"
+                                Hid-Write-Status -Event Warning "DryRun: Would create new resource owner group [$($resourceOwnerGroupName)]"
                             }
                         }
                     }
@@ -775,12 +775,12 @@ try {
                         
                         Hid-Write-Status -Event Error -Message "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
                         
-                        throw "Error creating new resource owner group [$($resourceOwnerGroupName)] for HelloID Self service Product [$($newProduct.Name)]. Error Message: $($errorMessage.AuditErrorMessage)"
+                        throw "Error creating new resource owner group [$($resourceOwnerGroupName)]. Error Message: $($errorMessage.AuditErrorMessage)"
                     }
                 }
                 else {
                     if ($verboseLogging -eq $true) {
-                        Hid-Write-Status -Event Warning "No resource owner group [$($resourceOwnerGroupName)] found for HelloID Self service Product [$($newProduct.Name)]"
+                        Hid-Write-Status -Event Warning "No resource owner group [$($resourceOwnerGroupName)]"
                     }
                 }
             }
@@ -989,12 +989,12 @@ try {
                         $addHelloIDAccessGroupToProduct = Invoke-HIDRestMethod @splatParams
 
                         if ($verboseLogging -eq $true) {
-                            Hid-Write-Status -Event Success "Successfully added HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($createdHelloIDSelfServiceProduct.Name)]"
+                            Hid-Write-Status -Event Success "Successfully added HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
                         }
                     }
                     else {
                         if ($verboseLogging -eq $true) {
-                            Hid-Write-Status -Event Warning "DryRun: Would add HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($createdHelloIDSelfServiceProduct.Name)]"
+                            Hid-Write-Status -Event Warning "DryRun: Would add HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
                         }
                     }
                 }
@@ -1004,12 +1004,12 @@ try {
                 
                     Hid-Write-Status -Event Error -Message "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
                 
-                    throw "Error adding HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($createdHelloIDSelfServiceProduct.Name)]. Error Message: $($errorMessage.AuditErrorMessage)"
+                    throw "Error adding HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]. Error Message: $($errorMessage.AuditErrorMessage)"
                 }
             }
             else {
                 if ($verboseLogging -eq $true) {
-                    Hid-Write-Status  -Event Warning -Message "The Specified HelloID Access Group [$($productAccessGroup)] does not exist. We will continue without adding the access Group to HelloID Self service Product [$($createdHelloIDSelfServiceProduct.Name)]"
+                    Hid-Write-Status  -Event Warning -Message "The Specified HelloID Access Group [$($productAccessGroup)] does not exist. We will continue without adding the access Group to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
                 }
             }
             $productCreatesSuccess++            
