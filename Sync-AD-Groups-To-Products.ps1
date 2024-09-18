@@ -27,12 +27,12 @@ $ADGroupsOUs = @("OU=HelloID,OU=Groups,DC=Enyoi,DC=local")
 
 #HelloID Product Configuration
 $productAccessGroup = "Local/__HelloID Selfservice Users"  # If not found, the product is created without extra Access Group
-$calculateProductResourceOwnerManagedByProperty = $false # If True the resource owner group will be defined per product based on the managedBy property of the AD group - This can only be a group, if the managedBy property is empty or set with a user, the group from $productResourseOwner will be used
-$calculateProductResourceOwnerPrefixSuffix = $false # If True the resource owner group will be defined per product based on specfied prefix or suffix - If no calculated group is found, the group from $productResourseOwner will be used
+$calculateProductResourceOwnerManagedByProperty = $false # If True the resource owner group will be defined per product based on the managedBy property of the AD group - This can only be a group, if the managedBy property is empty or set with a user, the group from $productResourceOwner will be used
+$calculateProductResourceOwnerPrefixSuffix = $false # If True the resource owner group will be defined per product based on specfied prefix or suffix - If no calculated group is found, the group from $productResourceOwner will be used
 $calculatedResourceOwnerGroupSource = "AzureAD" # Specify the source of the groups - if left empty, this will result in creation of a new group
 $calculatedResourceOwnerGroupPrefix = "" # Specify prefix to recognize the owner group - the owner group will be queried based on the Group name and the specified prefix and suffix - if both left empty, this will result in creation of a new group - if group is not found, it will be created
 $calculatedResourceOwnerGroupSuffix = " - Owner" # Specify suffix to recognize the owner group - the owner group will be queried based on the Group name and the specified prefix and suffix - if both left empty, this will result in creation of a new group - if group is not found, it will be created
-$productResourseOwner = "AzureAD/HelloID_SA_Owners" # If left empty the groupname will be: "Resource owners [target-systeem] - [Product_Naam]") - Only used when is false
+$productResourceOwner = "AzureAD/HelloID_SA_Owners" # If left empty the groupname will be: "Resource owners [target-systeem] - [Product_Naam]") - Only used when is false
 $productApprovalWorkflowId = "37ccd286-9f22-44e3-bc2e-7f421387e98e" # If empty, the Default HelloID Workflow is used. If specified Workflow does not exist the Product creation will raise an error.
 $productVisibility = "All" # If empty, "Disabled" is used. Supported options: All, ResourceOwnerAndManager, ResourceOwner, Disabled
 $productRequestCommentOption = "Required" # If empty, "Optional" is used. Supported options: Optional, Hidden, Required
