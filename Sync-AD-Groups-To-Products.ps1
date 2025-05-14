@@ -555,7 +555,7 @@ try {
                 [void]$adGroups.Add($adGroupsInOU)
             }
             if ($verboseLogging -eq $true) {
-                Hid-Write-Status -Event Information -Message "Successfully queried AD groups that match filter [$($adQuerySplatParams.Filter)] in OU [$($ADGroupsOU)]. Result count: $(($adGroupsInOU | Measure-Object).Count)"
+                Write-Verbose "Successfully queried AD groups that match filter [$($adQuerySplatParams.Filter)] in OU [$($ADGroupsOU)]. Result count: $(($adGroupsInOU | Measure-Object).Count)"
             }
         }
     }
@@ -715,7 +715,7 @@ try {
             else {
                 $resourceOwnerGroupName = if ([string]::IsNullOrWhiteSpace($productResourceOwner) ) { "Local/$($adGroupInScope.Name) Resource Owners" } else { $productResourceOwner }
                 if ($verboseLogging -eq $true) {
-                    Hid-Write-Status -Event Warning "No manager set in AD for AD group [$($adGroupInScope.Name)]. Using default resource owner group [$($resourceOwnerGroupName)]"
+                    Write-Verbose "No manager set in AD for AD group [$($adGroupInScope.Name)]. Using default resource owner group [$($resourceOwnerGroupName)]"
                 }
             }
         }
@@ -727,7 +727,7 @@ try {
             elseif ([string]::IsNullOrEmpty($($calculatedResourceOwnerGroupPrefix)) -and [string]::IsNullOrEmpty($($calculatedResourceOwnerGroupSuffix))) {
                 $resourceOwnerGroupName = if ([string]::IsNullOrWhiteSpace($productResourceOwner) ) { "Local/$($adGroupInScope.Name) Resource Owners" } else { $productResourceOwner }
                 if ($verboseLogging -eq $true) {
-                    Hid-Write-Status -Event Warning "No Resource Owner Group Prefix of Suffix specified. Using default resource owner group [$($resourceOwnerGroupName)]"
+                    Write-Verbose "No Resource Owner Group Prefix of Suffix specified. Using default resource owner group [$($resourceOwnerGroupName)]"
                 }
             }
         }
@@ -760,12 +760,12 @@ try {
                             $helloIDResourceOwnerGroup = Invoke-HIDRestMethod @splatParams
         
                             if ($verboseLogging -eq $true) {
-                                Hid-Write-Status -Event Success "Successfully created new resource owner group [$($resourceOwnerGroupName)]"
+                                Write-Verbose "Successfully created new resource owner group [$($resourceOwnerGroupName)]"
                             }
                         }
                         else {
                             if ($verboseLogging -eq $true) {
-                                Hid-Write-Status -Event Warning "DryRun: Would create new resource owner group [$($resourceOwnerGroupName)]"
+                                Write-Verbose "DryRun: Would create new resource owner group [$($resourceOwnerGroupName)]"
                             }
                         }
                     }
@@ -780,7 +780,7 @@ try {
                 }
                 else {
                     if ($verboseLogging -eq $true) {
-                        Hid-Write-Status -Event Warning "No resource owner group [$($resourceOwnerGroupName)]"
+                        Write-Verbose "No resource owner group [$($resourceOwnerGroupName)]"
                     }
                 }
             }
@@ -950,12 +950,12 @@ try {
                     $createdHelloIDSelfServiceProduct = Invoke-HIDRestMethod @splatParams
 
                     if ($verboseLogging -eq $true) {
-                        Hid-Write-Status -Event Success "Successfully created HelloID Self service Product [$($createHelloIDSelfServiceProductBody.Name)]"
+                        Write-Verbose "Successfully created HelloID Self service Product [$($createHelloIDSelfServiceProductBody.Name)]"
                     }
                 }
                 else {
                     if ($verboseLogging -eq $true) {
-                        Hid-Write-Status -Event Warning "DryRun: Would create HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
+                        Write-Verbose "DryRun: Would create HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
                     }
                 }
             }
@@ -989,12 +989,12 @@ try {
                         $addHelloIDAccessGroupToProduct = Invoke-HIDRestMethod @splatParams
 
                         if ($verboseLogging -eq $true) {
-                            Hid-Write-Status -Event Success "Successfully added HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
+                            Write-Verbose "Successfully added HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
                         }
                     }
                     else {
                         if ($verboseLogging -eq $true) {
-                            Hid-Write-Status -Event Warning "DryRun: Would add HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
+                            Write-Verbose "DryRun: Would add HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
                         }
                     }
                 }
@@ -1009,7 +1009,7 @@ try {
             }
             else {
                 if ($verboseLogging -eq $true) {
-                    Hid-Write-Status  -Event Warning -Message "The Specified HelloID Access Group [$($productAccessGroup)] does not exist. We will continue without adding the access Group to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
+                    Write-Verbose "The Specified HelloID Access Group [$($productAccessGroup)] does not exist. We will continue without adding the access Group to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
                 }
             }
             $productCreatesSuccess++            
@@ -1052,13 +1052,13 @@ try {
                     $deletedHelloIDSelfServiceProduct = Invoke-HIDRestMethod @splatParams                
     
                     if ($verboseLogging -eq $true) {
-                        Hid-Write-Status -Event Success "Successfully removed HelloID Self service Product [$($obsoleteProduct.Name)]"
+                        Write-Verbose "Successfully removed HelloID Self service Product [$($obsoleteProduct.Name)]"
                     }
                     $productRemovesSuccess++
                 }
                 else {
                     if ($verboseLogging -eq $true) {
-                        Hid-Write-Status -Event Warning "DryRun: Would remove HelloID Self service Product [$($obsoleteProduct.Name)]"
+                        Write-Verbose "DryRun: Would remove HelloID Self service Product [$($obsoleteProduct.Name)]"
                     }
                 }
             }
@@ -1096,13 +1096,13 @@ try {
                     $disableHelloIDSelfServiceProduct = Invoke-HIDRestMethod @splatParams
 
                     if ($verboseLogging -eq $true) {
-                        Hid-Write-Status -Event Success "Successfully disabled HelloID Self service Product [$($obsoleteProduct.Name)]"
+                        Write-Verbose "Successfully disabled HelloID Self service Product [$($obsoleteProduct.Name)]"
                     }
                     $productDisablesSuccess++
                 }
                 else {
                     if ($verboseLogging -eq $true) {
-                        Hid-Write-Status -Event Warning "DryRun: Would disable HelloID Self service Product [$($obsoleteProduct.Name)]"
+                        Write-Verbose "DryRun: Would disable HelloID Self service Product [$($obsoleteProduct.Name)]"
                     }
                 }
             }
@@ -1191,21 +1191,21 @@ try {
                             $updatedHelloIDSelfServiceProduct = Invoke-HIDRestMethod @splatParams
     
                             if ($verboseLogging -eq $true) {
-                                Hid-Write-Status -Event Success "Successfully updated HelloID Self service Product [$($updateHelloIDSelfServiceProductBody.Name)]"
+                                Write-Verbose "Successfully updated HelloID Self service Product [$($updateHelloIDSelfServiceProductBody.Name)]"
                             }
                         }
                         else {
-                            Hid-Write-Status -Event Warning "DryRun: Would update HelloID Self service Product [$($updateHelloIDSelfServiceProductBody.name)]"
+                            Write-Verbose "DryRun: Would update HelloID Self service Product [$($updateHelloIDSelfServiceProductBody.name)]"
                         }
                     }
                     else {
                         if ($dryRun -eq $false) {
                             if ($verboseLogging -eq $true) {
-                                Hid-Write-Status -Event Success "No changes to HelloID Self service Product [$($updateHelloIDSelfServiceProductBody.Name)]"
+                                Write-Verbose "No changes to HelloID Self service Product [$($updateHelloIDSelfServiceProductBody.Name)]"
                             }
                         }
                         else {
-                            Hid-Write-Status -Event Warning "DryRun: No changes to HelloID Self service Product [$($updateHelloIDSelfServiceProductBody.Name)]"
+                            Write-Verbose "DryRun: No changes to HelloID Self service Product [$($updateHelloIDSelfServiceProductBody.Name)]"
                         }
                     }
                 }
@@ -1240,12 +1240,12 @@ try {
                                 $addHelloIDAccessGroupToProduct = Invoke-HIDRestMethod @splatParams
 
                                 if ($verboseLogging -eq $true) {
-                                    Hid-Write-Status -Event Success "Successfully added HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($updatedHelloIDSelfServiceProduct.Name)]"
+                                    Write-Verbose "Successfully added HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($updatedHelloIDSelfServiceProduct.Name)]"
                                 }
                             }
                             else {
                                 if ($verboseLogging -eq $true) {
-                                    Hid-Write-Status -Event Warning "DryRun: Would add HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($updatedHelloIDSelfServiceProduct.Name)]"
+                                    Write-Verbose "DryRun: Would add HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($updatedHelloIDSelfServiceProduct.Name)]"
                                 }
                             }
                         }
@@ -1260,7 +1260,7 @@ try {
                     }
                     else {
                         if ($verboseLogging -eq $true) {
-                            Hid-Write-Status  -Event Warning -Message "The Specified HelloID Access Group [$($productAccessGroup)] does not exist. We will continue without adding the access Group to HelloID Self service Product [$($updatedHelloIDSelfServiceProduct.Name)]"
+                            Write-Verbose "The Specified HelloID Access Group [$($productAccessGroup)] does not exist. We will continue without adding the access Group to HelloID Self service Product [$($updatedHelloIDSelfServiceProduct.Name)]"
                         }
                     }
                 }
