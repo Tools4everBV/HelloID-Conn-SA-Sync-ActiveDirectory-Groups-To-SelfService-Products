@@ -42,7 +42,7 @@ $productCategory = "Application Groups" # If the category is not found, the task
 $productReturnOnUserDisable = $true # If True the product will be returned when the user owning the product gets disabled
 
 $removeProduct = $true # If False product will be disabled
-$overwriteExistingProduct = $true # If True existing product will be overwritten with the input from this script (e.g. the approval worklow or icon). Only use this when you actually changed the product input
+$overwriteExistingProduct = $false # If True existing product will be overwritten with the input from this script (e.g. the approval worklow or icon). Only use this when you actually changed the product input
 # Note: Actions are always overwritten, no compare takes place between the current actions and the actions this sync would set
 $overwriteAccessGroup = $false # Should be on false by default, only set this to true to overwrite product access group - Only meant for "manual" bulk update, not daily scheduled
 # Note: Access group is always overwritten, no compare takes place between the current access group and the access group this sync would set
