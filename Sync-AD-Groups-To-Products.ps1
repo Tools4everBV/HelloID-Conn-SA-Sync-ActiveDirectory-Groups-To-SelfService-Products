@@ -1,7 +1,7 @@
 #####################################################
 # HelloID-SA-Sync-AD-Groups-To-Products
 #
-# Version: 2.2.1
+# Version: 2.3.1
 #####################################################
 $VerbosePreference = "SilentlyContinue"
 $informationPreference = "Continue"
@@ -31,8 +31,8 @@ $ADGroupsOUs = @("OU=HelloID,OU=Groups,DC=Enyoi,DC=local")
 
 ######################################################################################
 # Default configuration
-# Determine group that give access to the synct products. If not found, the product is created without extra Access Group
-$productAccessGroup = "Local/__HelloID Selfservice Users"
+# Determine group(s) that give access to the synct products. If not found, the product is created without extra Access Group
+$productAccessGroups = ("Local/__HelloID Selfservice Users", "Local/Users")
 # Product approval workflow. Fill in the GUID of the workflow If empty, the Default HelloID Workflow is used. If specified Workflow does not exist the Product creation will raise an error.
 $productApprovalWorkflowId = "6a7e9e2c-f032-4121-9ed2-6135179d8d91" # Tip open the Approval workflow in HelloID, the GUID can be found in the browser URL
 # Product Visibility. If empty, "Disabled" is used. Supported options: All, ResourceOwnerAndManager, ResourceOwner, Disabled
@@ -1007,48 +1007,49 @@ try {
                 throw "Error creating HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]. Error Message: $($errorMessage.AuditErrorMessage)"
             }
 
-            # Get HelloID Access Group
-            $helloIDAccessGroup = $null
-            $helloIDAccessGroup = $helloIDGroupsInScopeGroupedBySourceAndName["$($productAccessGroup)"]
-
             # Add HelloID Access Group to HelloID Self service Product
-            if (-not $null -eq $helloIDAccessGroup) {
-                try {
-                    $addHelloIDAccessGroupToProductBody = @{
-                        GroupGuid = "$($helloIDAccessGroup.groupGuid)"
-                    }
+            foreach ($productAccessGroup in $productAccessGroups) {
+                # Get HelloID Access Group
+                $helloIDAccessGroup = $null
+                $helloIDAccessGroup = $helloIDGroupsInScopeGroupedBySourceAndName["$($productAccessGroup)"]
+                if (-not $null -eq $helloIDAccessGroup) {
+                    try {
+                        $addHelloIDAccessGroupToProductBody = @{
+                            GroupGuid = "$($helloIDAccessGroup.groupGuid)"
+                        }
 
-                    $splatParams = @{
-                        Method = "POST"
-                        Uri    = "selfserviceproducts/$($createdHelloIDSelfServiceProduct.productId)/groups"
-                        Body   = ($addHelloIDAccessGroupToProductBody | ConvertTo-Json -Depth 10)
-                    }
+                        $splatParams = @{
+                            Method = "POST"
+                            Uri    = "selfserviceproducts/$($createdHelloIDSelfServiceProduct.productId)/groups"
+                            Body   = ($addHelloIDAccessGroupToProductBody | ConvertTo-Json -Depth 10)
+                        }
 
-                    if ($dryRun -eq $false) {
-                        $addHelloIDAccessGroupToProduct = Invoke-HIDRestMethod @splatParams
+                        if ($dryRun -eq $false) {
+                            $addHelloIDAccessGroupToProduct = Invoke-HIDRestMethod @splatParams
 
-                        if ($verboseLogging -eq $true) {
-                            Write-Verbose "Successfully added HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
+                            if ($verboseLogging -eq $true) {
+                                Write-Verbose "Successfully added HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
+                            }
+                        }
+                        else {
+                            if ($verboseLogging -eq $true) {
+                                Write-Verbose "DryRun: Would add HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
+                            }
                         }
                     }
-                    else {
-                        if ($verboseLogging -eq $true) {
-                            Write-Verbose "DryRun: Would add HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
-                        }
+                    catch {
+                        $ex = $PSItem
+                        $errorMessage = Get-ErrorMessage -ErrorObject $ex
+                
+                        Hid-Write-Status -Event Error -Message "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
+                
+                        throw "Error adding HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]. Error Message: $($errorMessage.AuditErrorMessage)"
                     }
                 }
-                catch {
-                    $ex = $PSItem
-                    $errorMessage = Get-ErrorMessage -ErrorObject $ex
-                
-                    Hid-Write-Status -Event Error -Message "Error at Line [$($ex.InvocationInfo.ScriptLineNumber)]: $($ex.InvocationInfo.Line). Error: $($($errorMessage.VerboseErrorMessage))"
-                
-                    throw "Error adding HelloID Access Group [$($helloIDAccessGroup.Name)] to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]. Error Message: $($errorMessage.AuditErrorMessage)"
-                }
-            }
-            else {
-                if ($verboseLogging -eq $true) {
-                    Write-Verbose "The Specified HelloID Access Group [$($productAccessGroup)] does not exist. We will continue without adding the access Group to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
+                else {
+                    if ($verboseLogging -eq $true) {
+                        Write-Verbose "The Specified HelloID Access Group [$($productAccessGroup)] does not exist. We will continue without adding the access Group to HelloID Self service Product [$($createHelloIDSelfServiceProductBody.name)]"
+                    }
                 }
             }
             $productCreatesSuccess++            
@@ -1062,6 +1063,7 @@ try {
             $productCreatesError++
             throw "Error creating HelloID Self service Product [$($newProduct.Name)]. Error Message: $($errorMessage.AuditErrorMessage)"
         }
+  
     }
     if ($dryRun -eq $false) {
         if ($productCreatesSuccess -ge 1 -or $productCreatesError -ge 1) {
