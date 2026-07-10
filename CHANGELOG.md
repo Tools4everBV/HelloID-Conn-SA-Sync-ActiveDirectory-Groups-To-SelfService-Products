@@ -7,7 +7,12 @@ All notable changes to this project will be documented in this file. The format 
 ### Added
 
 - **Test Run Mode**: Added test run settings to limit operations per type (creates, updates, deletes) for safer testing
-- **Safety Thresholds**: Added configurable thresholds for create, update, and remove operations to prevent accidental mass changes
+- **Safety Thresholds with Smart Update Detection**: Configurable thresholds for create, update, and remove operations to prevent accidental mass changes. Update threshold intelligently applies only to products that actually have detected changes (properties, actions, or access groups), not all existing products. This significantly reduces unnecessary API calls and improves performance while maintaining safety controls.
+- **Intelligent Change Detection and Comparison**: Complete comparison logic that identifies exactly what needs updating before making changes:
+  - Property comparison: Detects which specific properties have changed between source and HelloID, with verbose logging showing old and new values
+  - Action comparison: Smart detection of action differences to only update when configured actions differ from existing ones
+  - Access group comparison: Calculates which groups need to be added or removed based on update behavior setting
+  - Only products with actual detected changes are counted toward update threshold and processed for updates
 - **Configurable Remove Behavior**: Added three options for handling products no longer in source system:
   - `None`: Keep products (requires manual cleanup)
   - `Disable`: Disable products (reversible, recommended)
@@ -54,7 +59,9 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Improved
 
-- Comprehensive inline documentation for all configuration sections
+- Comprehensive inline documentation for all configuration sections with detailed explanations for every configuration option
+- Access groups documentation clarified to show they can be from any source configured in HelloID (not limited to specific sources)
+- Update behavior documentation improved to focus on performance impact and continuous sync scenarios, making it clear that `$overwriteExistingProduct` can be permanently enabled for continuous synchronization
 - Clear warnings and recommendations for potentially dangerous operations
 - Better structured sections with clear separation of concerns
 - More intuitive configuration with examples and best practices
