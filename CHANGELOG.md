@@ -2,7 +2,18 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [3.0.0] - 08-06-2026
+## [3.0.1] - 2026-08-11
+
+### Fixed
+
+- **Action Preservation**: Fixed critical bug where product actions were incorrectly removed when updating product properties only (without action updates configured). Actions are now correctly preserved when `$updateReasons` does not contain "Actions", preventing accidental deletion of onApprove, onReturn, and other lifecycle actions during property-only updates.
+- **Documentation Consistency**: Corrected outdated references from "Exchange Online Shared Mailboxes" to "Active Directory Groups" in comments and logging messages throughout the script (copy-paste errors from template)
+
+### Changed
+
+- Added `resourceOwnerGroup` to the example properties in `$productPropertiesToUpdate` configuration comment for better clarity on available options
+
+## [3.0.0] - 2026-08-06
 
 ### Added
 
