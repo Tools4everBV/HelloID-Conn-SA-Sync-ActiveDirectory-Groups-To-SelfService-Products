@@ -26,7 +26,7 @@ $dryRun = $false  # If $true, shows what would happen without making changes
 $verboseLogging = $false  # If $true, logs every action (generates lots of log data)
 
 # Test run settings - Limit operations per type (useful for testing)
-# NOTE: All mailboxes are retrieved for correct comparison, but operations are limited per type
+# NOTE: All AD groups are retrieved for correct comparison, but operations are limited per type
 $testRun = $true  # If $true, limits operations based on the max values below
 $testRunMaxCreates = 1 # Maximum products to CREATE in test run (0 = no creates)
 $testRunMaxUpdates = 1 # Maximum products to UPDATE in test run (0 = no updates)
@@ -119,7 +119,7 @@ $productIdentifierPrefix = "APPGRP"
 
 # Unique Property - Source object property used to uniquely identify objects
 # Typically "objectGUID" for AD groups - must match a property retrieved from the source system
-# Examples: "GUID" (Exchange mailboxes), "objectGUID" (AD groups), "id" (AD groups)
+# Examples: "objectGUID" (AD groups), "id" (Entra ID groups), "GUID" (Exchange mailboxes)
 $sourceObjectUniqueProperty = "objectGUID"
 ######################################################################################
 
@@ -1031,7 +1031,7 @@ function Invoke-HelloIDRestMethod {
 #endregion functions
 
 #region script
-Write-StatusMessage -Event Information -Message "Starting synchronization of Exchange Online Shared Mailboxes to HelloID Self service Products"
+Write-StatusMessage -Event Information -Message "Starting synchronization of Active Directory Groups to HelloID Self service Products"
 
 # Validate Calculated mode configuration
 if ($resourceOwnerMode -eq "Calculated") {
