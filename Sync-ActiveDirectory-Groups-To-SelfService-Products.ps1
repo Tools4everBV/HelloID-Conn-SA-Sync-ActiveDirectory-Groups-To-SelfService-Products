@@ -1,7 +1,7 @@
 #####################################################
 # HelloID-SA-Sync-ActiveDirectory-Groups-To-SelfService-Products
 #
-# Version: 3.0.0
+# Version: 3.0.1
 #####################################################
 $VerbosePreference = "SilentlyContinue"
 $informationPreference = "Continue"
@@ -26,7 +26,7 @@ $dryRun = $false  # If $true, shows what would happen without making changes
 $verboseLogging = $false  # If $true, logs every action (generates lots of log data)
 
 # Test run settings - Limit operations per type (useful for testing)
-# NOTE: All mailboxes are retrieved for correct comparison, but operations are limited per type
+# NOTE: All AD groups are retrieved for correct comparison, but operations are limited per type
 $testRun = $true  # If $true, limits operations based on the max values below
 $testRunMaxCreates = 1 # Maximum products to CREATE in test run (0 = no creates)
 $testRunMaxUpdates = 1 # Maximum products to UPDATE in test run (0 = no updates)
@@ -119,7 +119,7 @@ $productIdentifierPrefix = "APPGRP"
 
 # Unique Property - Source object property used to uniquely identify objects
 # Typically "objectGUID" for AD groups - must match a property retrieved from the source system
-# Examples: "GUID" (Exchange mailboxes), "objectGUID" (AD groups), "id" (AD groups)
+# Examples: "objectGUID" (AD groups), "id" (Entra ID groups), "GUID" (Exchange mailboxes)
 $sourceObjectUniqueProperty = "objectGUID"
 ######################################################################################
 
@@ -472,6 +472,7 @@ $productPropertiesToUpdate = @(
     # "requestComment"
     # "allowMultipleRequests"
     # "returnOnUserDisable"
+    # "resourceOwnerGroup"
 )
 
 # Update Resource Owner Group when product name changes
@@ -1030,7 +1031,7 @@ function Invoke-HelloIDRestMethod {
 #endregion functions
 
 #region script
-Write-StatusMessage -Event Information -Message "Starting synchronization of Exchange Online Shared Mailboxes to HelloID Self service Products"
+Write-StatusMessage -Event Information -Message "Starting synchronization of Active Directory Groups to HelloID Self service Products"
 
 # Validate Calculated mode configuration
 if ($resourceOwnerMode -eq "Calculated") {
@@ -2304,6 +2305,45 @@ try {
                             foreach ($actionProperty in $actionProperties) {
                                 if ($actionProperty -notin $actionsToUpdate.Keys) {
                                     # Keep existing actions for this type as-is
+                                    if (($currentProductInHelloID.$actionProperty | Measure-Object).Count -gt 0) {
+                                        $updateBody | Add-Member -MemberType NoteProperty -Name $actionProperty -Value $currentProductInHelloID.$actionProperty -Force
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        # No action updates configured - preserve ALL existing actions to prevent deletion
+                        # This ensures that when updating only properties, actions are not accidentally removed
+                        
+                        # First, ensure we have the full product details (with actions)
+                        if (-not $fullProductDetailsCache.ContainsKey($existingProduct.Code)) {
+                            # Full product details not in cache - fetch them now to preserve actions
+                            try {
+                                $actionMessage = "fetching full product details for [$($existingProduct.Name)] to preserve actions during property update"
+                                $getProductSplatParams = @{
+                                    Uri     = "$($helloIDPortalBaseUrl)/api/v1/products/$($basicProductInfo.productId)"
+                                    Method  = 'GET'
+                                    Headers = $helloIDHeaders
+                                }
+                                $fullProductInfo = Invoke-HelloIDRestMethod @getProductSplatParams
+                                
+                                # Cache for later use
+                                $fullProductDetailsCache[$existingProduct.Code] = $fullProductInfo
+                            }
+                            catch {
+                                # If fetching fails, log warning but continue (actions may be lost)
+                                Write-StatusMessage -Event Warning -Message "Failed to fetch full product details for [$($existingProduct.Name)] to preserve actions. Actions may be lost during update. Error: $($_.Exception.Message)"
+                            }
+                        }
+                        
+                        # Now preserve all existing actions
+                        if ($fullProductDetailsCache.ContainsKey($existingProduct.Code)) {
+                            $currentProductInHelloID = $fullProductDetailsCache[$existingProduct.Code]
+                            
+                            if ($null -ne $currentProductInHelloID) {
+                                $actionProperties = @('onRequest', 'onApprove', 'onDeny', 'onReturn', 'onWithdraw')
+                                foreach ($actionProperty in $actionProperties) {
                                     if (($currentProductInHelloID.$actionProperty | Measure-Object).Count -gt 0) {
                                         $updateBody | Add-Member -MemberType NoteProperty -Name $actionProperty -Value $currentProductInHelloID.$actionProperty -Force
                                     }
