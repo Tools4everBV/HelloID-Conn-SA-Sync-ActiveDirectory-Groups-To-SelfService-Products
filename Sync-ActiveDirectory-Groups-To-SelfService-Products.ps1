@@ -1,7 +1,7 @@
 #####################################################
 # HelloID-SA-Sync-ActiveDirectory-Groups-To-SelfService-Products
 #
-# Version: 3.0.1
+# Version: 3.1.0
 #####################################################
 $VerbosePreference = "SilentlyContinue"
 $informationPreference = "Continue"
@@ -64,11 +64,14 @@ $removeProductBehavior = "Remove"  # Options: "None", "Disable", "Remove"
 
 # Remove Resource Owner Group when product is removed
 # Only applies when $removeProductBehavior = "Remove" (not when "Disable")
-# Only removes Local groups (synced groups from e.g. AD or Entra ID are never removed)
+# Only applies when $resourceOwnerMode = "Calculated" (in "Fixed" and "ManagedBy" mode the resource owner group is
+# shared or managed elsewhere, and is never removed with the product)
+# Only removes Local groups (synced groups from e.g. AD or Entra ID are never removed), and only when the group
+# name matches the calculated naming convention ($calculatedResourceOwnerGroupSource/prefix + name + suffix)
 # WARNING: This permanently deletes the resource owner group along with the product
 # - If $true: When a product is removed, its resource owner group is also deleted (recommended for "Calculated" mode)
 # - If $false: Resource owner groups are preserved even when products are removed (requires manual cleanup)
-# Recommendation: Set to $true for "Calculated" mode to avoid orphaned groups, $false for "Fixed" mode
+# Recommendation: Set to $true for "Calculated" mode to avoid orphaned groups
 $removeResourceOwnerGroupWithProduct = $true
 ######################################################################################
 
@@ -93,6 +96,7 @@ $adGroupPropertiesToRetrieve = @(
 # Examples:
 # - All groups: $null
 # - By name: "name -like `"App-*`" -or name -like `"*-App`""
+# - Only groups with a managedBy (useful with $resourceOwnerMode = "ManagedBy"): "managedBy -like `"*`""
 $adGroupsFilter = $null
 
 # Organizational Units to search for AD groups
@@ -413,7 +417,7 @@ function New-HelloIDProductConfiguration {
         )
 
         # NOTE: The following are NOT configured here because they have their own complex logic:
-        # - Resource Owner (see "Resource Owner Configuration" section below) - calculated per source object or fixed
+        # - Resource Owner (see "Resource Owner Configuration" section below) - calculated per source object, fixed, or taken from managedBy
     }
 }
 ######################################################################################
@@ -432,20 +436,32 @@ $categoryIcon = $null  # Custom icon hash (e.g., "824D1F9AA5CCD3978535A6455B2186
 ######################################################################################
 # Resource Owner Configuration - Who manages these products
 ######################################################################################
-# Choose resource owner mode: "Fixed" or "Calculated"
-# - Fixed: Same resource owner group for all products
+# Choose resource owner mode: "Fixed", "Calculated" or "ManagedBy"
+# - Fixed:     Same resource owner group for all products
 # - Calculated: Unique resource owner group per product (based on source object display name)
-$resourceOwnerMode = "Calculated"
+# - ManagedBy: Resource owner group is taken from the managedBy attribute of the AD group.
+#              The managedBy object must be a group; its name is looked up in HelloID as
+#              [$managedByResourceOwnerGroupSource]/[name of the managedBy group].
+#              If that group does not exist in HelloID, $productResourceOwner is used as fallback.
+$resourceOwnerMode = "Fixed"
 
-# Used when $resourceOwnerMode = "Fixed"
+# Used when $resourceOwnerMode = "Fixed", and as fallback when $resourceOwnerMode = "ManagedBy"
+# Format: "<source>/<group name>", e.g. "Local/__HelloID_Administrators"
 $productResourceOwner = "Local/__HelloID_Administrators"
 
 # Used when $resourceOwnerMode = "Calculated"
 # Result: $calculatedResourceOwnerGroupSource/$calculatedResourceOwnerGroupPrefix + sourceObject.DisplayName + $calculatedResourceOwnerGroupSuffix
-# Example: "Local/Sales Resource Owner" for source object "Sales"
 $calculatedResourceOwnerGroupSource = "Local"  # "AzureAD" or "Local"
 $calculatedResourceOwnerGroupPrefix = ""  # Optional
 $calculatedResourceOwnerGroupSuffix = " Resource Owner"  # At least prefix OR suffix required
+
+# Used when $resourceOwnerMode = "ManagedBy"
+# Source of the resource owner groups in HelloID, as shown in HelloID (e.g. the name of the AD source)
+$managedByResourceOwnerGroupSource = "ActiveDirectory"
+# NOTE: AD groups with an empty managedBy, or a managedBy that is a user (not a group), are synced with
+#       $productResourceOwner as owner. To only sync groups that have a managedBy, use $adGroupsFilter, e.g.
+#       "managedBy -like `"*`"". Groups excluded by the filter are out of scope and become obsolete if a
+#       product already exists - see $removeProductBehavior!
 ######################################################################################
 
 ######################################################################################
@@ -944,6 +960,40 @@ function Get-ResourceOwnerGroupName {
     }
 }
 
+function Test-CalculatedResourceOwnerGroupName {
+    <#
+    .SYNOPSIS
+    Checks if a resource owner group name matches the calculated naming convention from the configuration.
+
+    .DESCRIPTION
+    Used for safe removal of resource owner groups: the source object no longer exists for obsolete products,
+    so the expected name cannot be calculated. Instead, the name must match
+    "$calculatedResourceOwnerGroupSource/$calculatedResourceOwnerGroupPrefix<name>$calculatedResourceOwnerGroupSuffix",
+    where <name> is not empty.
+
+    .PARAMETER GroupName
+    The full resource owner group name including source prefix (e.g., "Local/Sales Resource Owner").
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $false)]
+        [string]$GroupName
+    )
+
+    process {
+        if ([string]::IsNullOrEmpty($GroupName)) { return $false }
+
+        $startsWith = "$($calculatedResourceOwnerGroupSource)/$($calculatedResourceOwnerGroupPrefix)"
+        $endsWith = "$($calculatedResourceOwnerGroupSuffix)"
+
+        return (
+            $GroupName.StartsWith($startsWith, [System.StringComparison]::OrdinalIgnoreCase) -and
+            $GroupName.EndsWith($endsWith, [System.StringComparison]::OrdinalIgnoreCase) -and
+            $GroupName.Length -gt ($startsWith.Length + $endsWith.Length)
+        )
+    }
+}
+
 function Invoke-HelloIDRestMethod {
     [CmdletBinding()]
     param (
@@ -1033,7 +1083,16 @@ function Invoke-HelloIDRestMethod {
 #region script
 Write-StatusMessage -Event Information -Message "Starting synchronization of Active Directory Groups to HelloID Self service Products"
 
-# Validate Calculated mode configuration
+
+# Validate resource owner mode and calculated mode configuration
+if ($resourceOwnerMode -notin @("Fixed", "Calculated", "ManagedBy")) {
+    Write-SummaryMessage -Event "Failed" -Message "Configuration error: invalid resourceOwnerMode [$resourceOwnerMode]. Supported: Fixed, Calculated, ManagedBy."
+    exit
+}
+if ($resourceOwnerMode -eq "ManagedBy" -and $adGroupPropertiesToRetrieve -notcontains "managedBy") {
+    Write-SummaryMessage -Event "Failed" -Message "Configuration error: resourceOwnerMode 'ManagedBy' requires 'managedBy' in `$adGroupPropertiesToRetrieve."
+    exit
+}
 if ($resourceOwnerMode -eq "Calculated") {
     if ([string]::IsNullOrEmpty($calculatedResourceOwnerGroupPrefix) -and [string]::IsNullOrEmpty($calculatedResourceOwnerGroupSuffix)) {
         Write-SummaryMessage -Event "Failed" -Message "Configuration error: When using resourceOwnerMode 'Calculated', at least one of calculatedResourceOwnerGroupPrefix or calculatedResourceOwnerGroupSuffix must be configured. Both cannot be empty."
@@ -1103,6 +1162,23 @@ try {
 
     Write-StatusMessage -Event Success -Message "Successfully queried AD groups that match filter [$effectiveFilter]. Result count: $(($adGroups | Measure-Object).Count)"
 
+    # ManagedBy: resolve the managedBy DNs once (per unique DN)
+    $managedByLookup = @{}
+    if ($resourceOwnerMode -eq "ManagedBy") {
+        $actionMessage = "resolving managedBy objects of AD groups"
+        $uniqueManagedByDNs = $adGroups | Where-Object { -not [string]::IsNullOrEmpty($_.managedBy) } |
+            Select-Object -ExpandProperty managedBy -Unique
+        foreach ($managedByDN in $uniqueManagedByDNs) {
+            try {
+                $managedByLookup[$managedByDN] = Get-ADObject -Identity $managedByDN -Properties name, objectClass -ErrorAction Stop
+            }
+            catch {
+                $managedByLookup[$managedByDN] = $null
+                Write-StatusMessage -Event Warning -Message "Could not resolve managedBy [$managedByDN]: $($_.Exception.Message)"
+            }
+        }
+    }
+
     # Build list of source objects in scope based on query results (to use in further actions)
     $sourceObjectsInScope = [System.Collections.Generic.List[Object]]::New()
     foreach ($adGroup in $adGroups) {
@@ -1110,7 +1186,19 @@ try {
         # AD groups use "name" property, but the rest of this script expects "displayName" property (like Entra ID groups)
         # This mapping ensures compatibility with the product configuration function and all downstream logic
         $adGroup | Add-Member -MemberType NoteProperty -Name "displayName" -Value $adGroup.name -Force
-        
+
+        if ($resourceOwnerMode -eq "ManagedBy") {
+            $managedByObject = $null
+            if (-not [string]::IsNullOrEmpty($adGroup.managedBy)) {
+                $managedByObject = $managedByLookup[$adGroup.managedBy]
+            }
+            $managedByIsGroup = ($null -ne $managedByObject -and $managedByObject.objectClass -eq "group")
+
+            $managedByGroupName = $null
+            if ($managedByIsGroup) { $managedByGroupName = $managedByObject.Name }
+            $adGroup | Add-Member -MemberType NoteProperty -Name "managedByGroupName" -Value $managedByGroupName -Force
+        }
+
         [void]$sourceObjectsInScope.Add($adGroup)
     }
 
@@ -1225,6 +1313,14 @@ try {
     }
     $helloIDGroupsInScopeGroupedBySourceAndName = $helloIDGroupsInScope | Group-Object -Property "SourceAndName" -AsHashTable -AsString
     Write-StatusMessage -Event Success -Message "Successfully queried Groups from HelloID. Result count: $(($helloIDGroupsInScope | Measure-Object).Count)"
+
+    # Validate default resource owner group (Fixed mode, and fallback in ManagedBy mode)
+    if ($resourceOwnerMode -in @("Fixed", "ManagedBy")) {
+        $actionMessage = "validating resource owner group [$productResourceOwner] exists in HelloID"
+        if (-not $helloIDGroupsInScopeGroupedBySourceAndName.ContainsKey($productResourceOwner)) {
+            throw "Resource owner group [$productResourceOwner] not found in HelloID"
+        }
+    }
 
     # Get HelloID selfservice categories
     $actionMessage = "querying Self service categories from HelloID"
@@ -1408,10 +1504,26 @@ try {
         $calculatedProductCode = $productConfig.Code.Replace("-", "")
         $productAlreadyExists = $calculatedProductCode -in $helloIDSelfServiceProductsInScope.code
         
-        # Define ManagedBy Group
+        # Define resource owner group name
         if ( $resourceOwnerMode -eq "Calculated" ) {
             # Calculate resource owner group using helper function
             $resourceOwnerGroupName = Get-ResourceOwnerGroupName -SourceObjectDisplayName $sourceObjectInScope.DisplayName -IncludeSourcePrefix $true
+        }
+        elseif ( $resourceOwnerMode -eq "ManagedBy" ) {
+            # Resource owner group = group in the managedBy attribute of the AD group
+            $resourceOwnerGroupName = $null
+            if (-not [string]::IsNullOrEmpty($sourceObjectInScope.managedByGroupName)) {
+                $resourceOwnerGroupName = "$($managedByResourceOwnerGroupSource)/$($sourceObjectInScope.managedByGroupName)"
+            }
+
+            # No managedBy group, or group not (yet) available in HelloID: fall back to the default owner group
+            if ([string]::IsNullOrEmpty($resourceOwnerGroupName) -or
+                $null -eq $helloIDGroupsInScopeGroupedBySourceAndName["$($resourceOwnerGroupName)"]) {
+                if ($verboseLogging -eq $true) {
+                    Write-Verbose "No HelloID resource owner group found for [$($sourceObjectInScope.DisplayName)] (managedBy group: [$resourceOwnerGroupName]). Using default [$productResourceOwner]"
+                }
+                $resourceOwnerGroupName = $productResourceOwner
+            }
         }
         else {
             # Fixed mode - use specified resource owner group
@@ -2452,13 +2564,13 @@ try {
     }
     
     # Check for resource owner group deletes (only when products will be removed)
-    if ($removeProductBehavior -eq "Remove" -and $removeResourceOwnerGroupWithProduct -eq $true -and ($obsoleteProducts | Measure-Object).Count -gt 0) {
+    if ($removeProductBehavior -eq "Remove" -and $removeResourceOwnerGroupWithProduct -eq $true -and $resourceOwnerMode -eq "Calculated" -and ($obsoleteProducts | Measure-Object).Count -gt 0) {
         foreach ($obsoleteProduct in $obsoleteProducts) {
             try {
                 # Check if product has a resource owner group
                 if ($null -ne $obsoleteProduct.resourceOwnerGroup -and -not[string]::IsNullOrEmpty($obsoleteProduct.resourceOwnerGroup.name)) {
-                    # Only count Local groups (not synced groups like from AzureAD)
-                    if ($obsoleteProduct.resourceOwnerGroup.name -like "Local/*") {
+                    # Only count Local groups (not synced groups like from AzureAD) whose name matches the calculated naming convention
+                    if ($obsoleteProduct.resourceOwnerGroup.name -like "Local/*" -and (Test-CalculatedResourceOwnerGroupName -GroupName $obsoleteProduct.resourceOwnerGroup.name)) {
                         $updateStatistics.ResourceOwnerGroupDeletes++
                         $productsWithResourceOwnerGroupDeletes += [PSCustomObject]@{
                             Product   = $obsoleteProduct
@@ -2920,8 +3032,9 @@ try {
                         }
                         $productRemovesSuccess++
                         
-                        # Remove resource owner group
-                        if ($removeResourceOwnerGroupWithProduct -eq $true) {
+                        # Remove resource owner group (only in Calculated mode, only Local groups, and only when the name matches the calculated naming convention).
+                        # In Fixed/ManagedBy mode the owner group is shared or managed elsewhere and must never be removed with the product.
+                        if ($removeResourceOwnerGroupWithProduct -eq $true -and $resourceOwnerMode -eq "Calculated" -and $obsoleteProduct.resourceOwnerGroup.name -like "Local/*" -and (Test-CalculatedResourceOwnerGroupName -GroupName $obsoleteProduct.resourceOwnerGroup.name)) {
                             $actionMessage = "removing resource owner group for product [$($obsoleteProduct.Name)]"
                             try {
                                 $deleteResourceOwnerGroupSplatParams = @{
@@ -2961,7 +3074,8 @@ try {
                     else {
                         if ($verboseLogging -eq $true) {
                             Write-Verbose "DryRun: Would remove HelloID Self service Product [$($obsoleteProduct.Name)]"
-                            if ($removeResourceOwnerGroupWithProduct -eq $true) {
+                            # Only in Calculated mode; in Fixed/ManagedBy mode the owner group is shared and never removed with the product
+                            if ($removeResourceOwnerGroupWithProduct -eq $true -and $resourceOwnerMode -eq "Calculated" -and $obsoleteProduct.resourceOwnerGroup.name -like "Local/*" -and (Test-CalculatedResourceOwnerGroupName -GroupName $obsoleteProduct.resourceOwnerGroup.name)) {
                                 Write-Verbose "DryRun: Would also remove resource owner group [$($obsoleteProduct.resourceOwnerGroup.id)]"
                             }
                         }

@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.1.0] - 2026-11-23
+
+### Added
+
+- **ManagedBy Resource Owner Mode**: New `$resourceOwnerMode = "ManagedBy"`. The resource owner group is taken from the `managedBy` attribute of the AD group. The managedBy object must be a group and is looked up in HelloID as `[$managedByResourceOwnerGroupSource]/[name of the managedBy group]`. If the managedBy is empty, is not a group, or the group does not exist in HelloID, `$productResourceOwner` is used as fallback. Use `$adGroupsFilter` (e.g. `managedBy -like "*"`) to only sync groups that have a managedBy.
+- New variable `$managedByResourceOwnerGroupSource` (default `"ActiveDirectory"`)
+- Validation of `$resourceOwnerMode` (must be Fixed, Calculated or ManagedBy), and a check that `managedBy` is part of `$adGroupPropertiesToRetrieve` when using ManagedBy mode
+- Validation that `$productResourceOwner` exists in HelloID when using Fixed or ManagedBy mode
+
+### Changed
+
+- Default of `$resourceOwnerMode` changed from `"Calculated"` to `"Fixed"`. Set it explicitly to `"Calculated"` to keep the previous behavior
+- **Safer resource owner group removal**: resource owner groups are now only removed together with a product when `$removeProductBehavior = "Remove"`, `$resourceOwnerMode = "Calculated"`, the group is a Local group, and the group name matches the calculated naming convention (source, prefix and suffix). In Fixed and ManagedBy mode the resource owner group is never removed with the product. This also applies to the statistics and DryRun output
+
 ## [3.0.1] - 2026-08-11
 
 ### Fixed
