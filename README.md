@@ -183,8 +183,9 @@ Determines who manages the products:
 
 | Variable | Description | Default |
 | -------- | ----------- | ------- |
-| `$resourceOwnerMode` | "Fixed" (same group for all) or "Calculated" (unique per product) | `"Calculated"` |
+| `$resourceOwnerMode` | "Fixed" (same group for all), "Calculated" (unique per product) or "ManagedBy" (group from the managedBy attribute of the AD group) | `"Calculated"` |
 | `$productResourceOwner` | Resource owner group when using Fixed mode | `"Local/__HelloID_Administrators"` |
+| `$managedByResourceOwnerGroupSource` | Source of the managedBy resource owner groups in HelloID (ManagedBy mode only) | `"AD.LAN"` |
 | `$calculatedResourceOwnerGroupSource` | Source for calculated groups: "AzureAD" or "Local" | `"Local"` |
 | `$calculatedResourceOwnerGroupPrefix` | Prefix for calculated resource owner group names | `""` |
 | `$calculatedResourceOwnerGroupSuffix` | Suffix for calculated resource owner group names | `" Resource Owner"` |
