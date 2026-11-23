@@ -444,7 +444,7 @@ $categoryIcon = $null  # Custom icon hash (e.g., "824D1F9AA5CCD3978535A6455B2186
 #              [$managedByResourceOwnerGroupSource]/[name of the managedBy group].
 #              If that group does not exist in HelloID, no resource owner group is set on the product
 #              (a next run can set it, see $productPropertiesToUpdate).
-$resourceOwnerMode = "Fixed"
+$resourceOwnerMode = "Calculated"
 
 # Used when $resourceOwnerMode = "Fixed"
 # Format: "<source>/<group name>", e.g. "Local/__HelloID_Administrators"
@@ -458,7 +458,7 @@ $calculatedResourceOwnerGroupSuffix = " Resource Owner"  # At least prefix OR su
 
 # Used when $resourceOwnerMode = "ManagedBy"
 # Source of the resource owner groups in HelloID, as shown in HelloID (e.g. the name of the AD source)
-$managedByResourceOwnerGroupSource = "ActiveDirectory"
+$managedByResourceOwnerGroupSource = "AD.LAN"
 # NOTE: Only AD groups whose managedBy is a GROUP are synced. AD groups with an empty or user managedBy are left
 #       out of scope (and become obsolete if a product already exists - see $removeProductBehavior!)
 ######################################################################################
