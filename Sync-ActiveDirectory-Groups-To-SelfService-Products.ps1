@@ -96,7 +96,6 @@ $adGroupPropertiesToRetrieve = @(
 # Examples:
 # - All groups: $null
 # - By name: "name -like `"App-*`" -or name -like `"*-App`""
-# - Only groups with a managedBy (useful with $resourceOwnerMode = "ManagedBy"): "managedBy -like `"*`""
 $adGroupsFilter = $null
 
 # Organizational Units to search for AD groups
@@ -440,12 +439,14 @@ $categoryIcon = $null  # Custom icon hash (e.g., "824D1F9AA5CCD3978535A6455B2186
 # - Fixed:     Same resource owner group for all products
 # - Calculated: Unique resource owner group per product (based on source object display name)
 # - ManagedBy: Resource owner group is taken from the managedBy attribute of the AD group.
-#              The managedBy object must be a group; its name is looked up in HelloID as
+#              Only AD groups whose managedBy is a group are synced (empty or user managedBy is skipped).
+#              The name of the managedBy group is looked up in HelloID as
 #              [$managedByResourceOwnerGroupSource]/[name of the managedBy group].
-#              If that group does not exist in HelloID, $productResourceOwner is used as fallback.
+#              If that group does not exist in HelloID, no resource owner group is set on the product
+#              (a next run can set it, see $productPropertiesToUpdate).
 $resourceOwnerMode = "Fixed"
 
-# Used when $resourceOwnerMode = "Fixed", and as fallback when $resourceOwnerMode = "ManagedBy"
+# Used when $resourceOwnerMode = "Fixed"
 # Format: "<source>/<group name>", e.g. "Local/__HelloID_Administrators"
 $productResourceOwner = "Local/__HelloID_Administrators"
 
@@ -458,10 +459,8 @@ $calculatedResourceOwnerGroupSuffix = " Resource Owner"  # At least prefix OR su
 # Used when $resourceOwnerMode = "ManagedBy"
 # Source of the resource owner groups in HelloID, as shown in HelloID (e.g. the name of the AD source)
 $managedByResourceOwnerGroupSource = "ActiveDirectory"
-# NOTE: AD groups with an empty managedBy, or a managedBy that is a user (not a group), are synced with
-#       $productResourceOwner as owner. To only sync groups that have a managedBy, use $adGroupsFilter, e.g.
-#       "managedBy -like `"*`"". Groups excluded by the filter are out of scope and become obsolete if a
-#       product already exists - see $removeProductBehavior!
+# NOTE: Only AD groups whose managedBy is a GROUP are synced. AD groups with an empty or user managedBy are left
+#       out of scope (and become obsolete if a product already exists - see $removeProductBehavior!)
 ######################################################################################
 
 ######################################################################################
@@ -1181,6 +1180,7 @@ try {
 
     # Build list of source objects in scope based on query results (to use in further actions)
     $sourceObjectsInScope = [System.Collections.Generic.List[Object]]::New()
+    $skippedNoGroupOwner = 0
     foreach ($adGroup in $adGroups) {
         # IMPORTANT: Add displayName property mapping - DO NOT REMOVE!
         # AD groups use "name" property, but the rest of this script expects "displayName" property (like Entra ID groups)
@@ -1194,12 +1194,25 @@ try {
             }
             $managedByIsGroup = ($null -ne $managedByObject -and $managedByObject.objectClass -eq "group")
 
+            # Only AD groups whose managedBy is a group are in scope: leave the others (empty or user managedBy) out
+            if (-not $managedByIsGroup) {
+                $skippedNoGroupOwner++
+                if ($verboseLogging -eq $true) {
+                    Write-Verbose "Skipping AD group [$($adGroup.name)]: managedBy is empty or not a group"
+                }
+                continue
+            }
+
             $managedByGroupName = $null
             if ($managedByIsGroup) { $managedByGroupName = $managedByObject.Name }
             $adGroup | Add-Member -MemberType NoteProperty -Name "managedByGroupName" -Value $managedByGroupName -Force
         }
 
         [void]$sourceObjectsInScope.Add($adGroup)
+    }
+
+    if ($skippedNoGroupOwner -gt 0) {
+        Write-StatusMessage -Event Information -Message "Left out [$skippedNoGroupOwner] AD group(s): managedBy is empty or not a group"
     }
 
     if (($sourceObjectsInScope | Measure-Object).Count -eq 0) {
@@ -1314,8 +1327,8 @@ try {
     $helloIDGroupsInScopeGroupedBySourceAndName = $helloIDGroupsInScope | Group-Object -Property "SourceAndName" -AsHashTable -AsString
     Write-StatusMessage -Event Success -Message "Successfully queried Groups from HelloID. Result count: $(($helloIDGroupsInScope | Measure-Object).Count)"
 
-    # Validate default resource owner group (Fixed mode, and fallback in ManagedBy mode)
-    if ($resourceOwnerMode -in @("Fixed", "ManagedBy")) {
+    # Validate resource owner group (Fixed mode)
+    if ($resourceOwnerMode -eq "Fixed") {
         $actionMessage = "validating resource owner group [$productResourceOwner] exists in HelloID"
         if (-not $helloIDGroupsInScopeGroupedBySourceAndName.ContainsKey($productResourceOwner)) {
             throw "Resource owner group [$productResourceOwner] not found in HelloID"
@@ -1516,13 +1529,12 @@ try {
                 $resourceOwnerGroupName = "$($managedByResourceOwnerGroupSource)/$($sourceObjectInScope.managedByGroupName)"
             }
 
-            # No managedBy group, or group not (yet) available in HelloID: fall back to the default owner group
+            # No managedBy group, or group not (yet) available in HelloID: no resource owner group is set.
+            # A next run of this sync will set it as soon as the group is available (see $productPropertiesToUpdate "resourceOwnerGroup").
             if ([string]::IsNullOrEmpty($resourceOwnerGroupName) -or
                 $null -eq $helloIDGroupsInScopeGroupedBySourceAndName["$($resourceOwnerGroupName)"]) {
-                if ($verboseLogging -eq $true) {
-                    Write-Verbose "No HelloID resource owner group found for [$($sourceObjectInScope.DisplayName)] (managedBy group: [$resourceOwnerGroupName]). Using default [$productResourceOwner]"
-                }
-                $resourceOwnerGroupName = $productResourceOwner
+                Write-StatusMessage -Event Warning -Message "Resource owner group [$resourceOwnerGroupName] (managedBy of [$($sourceObjectInScope.DisplayName)]) not found in HelloID. No resource owner group will be set. Run the HelloID source synchronization first; if the group is still not found, check the synchronization settings of the source in HelloID."
+                $resourceOwnerGroupName = $null
             }
         }
         else {
@@ -1790,10 +1802,15 @@ try {
             code                       = $productConfig.Code.Replace("-", "")#.ToUpper()
             
             # Resource Owner
-            resourceOwnerGroup         = [PSCustomObject]@{
-                id = $helloIDResourceOwnerGroup.groupGuid
+            resourceOwnerGroup         = if ($null -ne $helloIDResourceOwnerGroup) {
+                [PSCustomObject]@{
+                    id = $helloIDResourceOwnerGroup.groupGuid
+                }
             }
-            
+            else {
+                $null
+            }
+
             # Approval & Workflow
             approvalWorkflow           = if ($productConfig.ApprovalWorkflowId) { 
                 [PSCustomObject]@{
@@ -2015,7 +2032,7 @@ try {
                         }
                         $changedProperties = (Compare-Object @splatCompareProperties -PassThru)
                         $newProperties = $changedProperties.Where( { $_.SideIndicator -eq "=>" })
-                        
+
                         if (($newProperties | Measure-Object).Count -gt 0) {
                             $needsUpdate = $true
                             $updateReasons += "Properties"

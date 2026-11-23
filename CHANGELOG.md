@@ -6,10 +6,10 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
-- **ManagedBy Resource Owner Mode**: New `$resourceOwnerMode = "ManagedBy"`. The resource owner group is taken from the `managedBy` attribute of the AD group. The managedBy object must be a group and is looked up in HelloID as `[$managedByResourceOwnerGroupSource]/[name of the managedBy group]`. If the managedBy is empty, is not a group, or the group does not exist in HelloID, `$productResourceOwner` is used as fallback. Use `$adGroupsFilter` (e.g. `managedBy -like "*"`) to only sync groups that have a managedBy.
-- New variable `$managedByResourceOwnerGroupSource` (default `"ActiveDirectory"`)
+- **ManagedBy Resource Owner Mode**: New `$resourceOwnerMode = "ManagedBy"`. The resource owner group is taken from the `managedBy` attribute of the AD group. The managedBy object must be a group and is looked up in HelloID as `[$managedByResourceOwnerGroupSource]/[name of the managedBy group]`. If the managedBy group does not exist in HelloID, no resource owner group is set on the product (a next run can set it). Only AD groups whose managedBy is a group are synced; groups with an empty or user managedBy are skipped.
+- New variable `$managedByResourceOwnerGroupSource` (default `"ActiveDirectory"`), the source name of the managedBy groups in HelloID. A warning is logged when a managedBy group is not found in HelloID
 - Validation of `$resourceOwnerMode` (must be Fixed, Calculated or ManagedBy), and a check that `managedBy` is part of `$adGroupPropertiesToRetrieve` when using ManagedBy mode
-- Validation that `$productResourceOwner` exists in HelloID when using Fixed or ManagedBy mode
+- Validation that `$productResourceOwner` exists in HelloID when using Fixed mode
 
 ### Changed
 
